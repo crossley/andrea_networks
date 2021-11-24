@@ -35,3 +35,9 @@ import collections
 import seaborn as sn
 import pandas as pd
 from matplotlib.ticker import FormatStrFormatter
+from SiameseNet import *
+from SiameseNet0 import *
+from SiameseNet1 import *
+from SiameseNet12 import *
+from SiameseNet2 import *
+from SiameseNet22 import *

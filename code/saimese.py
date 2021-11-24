@@ -8,14 +8,16 @@ Created on Sat Nov 20 16:08:56 2021
 from imports import *
 from util_funcs import *
 
-defaults.device = torch.device('cuda')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+defaults.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 seed = 30
 np.random.seed(seed)
 torch.manual_seed(seed)
 
 # stim_path = Path(r'D:\Andrea_NN\stimuli\no_transf')
-stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
+# stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
+stim_path = Path('../samediff_no-transf')
 epochs = 1
 cycles = 1
 batch_sz = 24

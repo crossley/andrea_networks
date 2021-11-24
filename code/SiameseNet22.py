@@ -5,11 +5,13 @@ Created on Sun Nov 21 10:10:51 2021
 @author: mq20185996
 """
 
+from imports import *
+
 
 class SiameseNet22(SiameseNet):
     def __init__(self, w_dropout_1, w_dropout_2):
 
-        super(SiameseNet22, self).__init__(w_dropout_1, w_dropout_2)
+        super(SiameseNet22, self).__init__(w_dropout_1, w_dropout_2, 2)
 
         self.head_mult = 2
 

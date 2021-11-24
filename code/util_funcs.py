@@ -6,7 +6,6 @@ Created on Sun Nov 21 10:02:00 2021
 """
 
 from imports import *
-from SiameseNet import *
 
 
 def label_func(path):
@@ -269,46 +268,31 @@ def plot_acc(tr_acc, te_acc, cycle, epoch, path=""):
 def init_pretrained_weights(net):
     # use corenet weights pretrained on imagenet
     url = f'https://s3.amazonaws.com/cornet-models/cornet_z-5c427c9c.pth'
-    ckpt_data = torch.utils.model_zoo.load_url(url)
+    ckpt_data = torch.utils.model_zoo.load_url(
+        url, map_location="cuda" if torch.cuda.is_available() else "cpu")
 
     state_dict = {
-        "V1_p.0.weight": ckpt_data['state_dict']['module.V1.conv.weight'],
-        "V1_p.0.bias": ckpt_data['state_dict']['module.V1.conv.bias'],
-        "V2_p.0.weight": ckpt_data['state_dict']['module.V2.conv.weight'],
-        "V2_p.0.bias": ckpt_data['state_dict']['module.V2.conv.bias'],
-        "V4_p.0.weight": ckpt_data['state_dict']['module.V4.conv.weight'],
-        "V4_p.0.bias": ckpt_data['state_dict']['module.V4.conv.bias'],
-        "V1_f.0.weight": ckpt_data['state_dict']['module.V1.conv.weight'],
-        "V1_f.0.bias": ckpt_data['state_dict']['module.V1.conv.bias'],
-        "V2_f.0.weight": ckpt_data['state_dict']['module.V2.conv.weight'],
-        "V2_f.0.bias": ckpt_data['state_dict']['module.V2.conv.bias'],
-        "V4_f.0.weight": ckpt_data['state_dict']['module.V4.conv.weight'],
-        "V4_f.0.bias": ckpt_data['state_dict']['module.V4.conv.bias'],
-        "IT_f.0.weight": ckpt_data['state_dict']['module.IT.conv.weight'],
-        "IT_f.0.bias": ckpt_data['state_dict']['module.IT.conv.bias'],
-        "IT_p.0.weight": ckpt_data['state_dict']['module.IT.conv.weight'],
-        "IT_p.0.bias": ckpt_data['state_dict']['module.IT.conv.bias'],
+        "V1.0.weight": ckpt_data['state_dict']['module.V1.conv.weight'],
+        "V1.0.bias": ckpt_data['state_dict']['module.V1.conv.bias'],
+        "V2.0.weight": ckpt_data['state_dict']['module.V2.conv.weight'],
+        "V2.0.bias": ckpt_data['state_dict']['module.V2.conv.bias'],
+        "V4.0.weight": ckpt_data['state_dict']['module.V4.conv.weight'],
+        "V4.0.bias": ckpt_data['state_dict']['module.V4.conv.bias'],
+        "IT.0.weight": ckpt_data['state_dict']['module.IT.conv.weight'],
+        "IT.0.bias": ckpt_data['state_dict']['module.IT.conv.bias'],
     }
 
     net.load_state_dict(state_dict, strict=False)
 
     # hold all saimese trunk weights to their pretrained values
-    net.V1_p[0].weight.requires_grad = False
-    net.V1_p[0].bias.requires_grad = False
-    net.V2_p[0].weight.requires_grad = False
-    net.V2_p[0].bias.requires_grad = False
-    net.V4_p[0].weight.requires_grad = False
-    net.V4_p[0].bias.requires_grad = False
-    net.IT_p[0].weight.requires_grad = False
-    net.IT_p[0].bias.requires_grad = False
-    net.V1_f[0].weight.requires_grad = False
-    net.V1_f[0].bias.requires_grad = False
-    net.V2_f[0].weight.requires_grad = False
-    net.V2_f[0].bias.requires_grad = False
-    net.V4_f[0].weight.requires_grad = False
-    net.V4_f[0].bias.requires_grad = False
-    net.IT_f[0].weight.requires_grad = False
-    net.IT_f[0].bias.requires_grad = False
+    net.V1[0].weight.requires_grad = False
+    net.V1[0].bias.requires_grad = False
+    net.V2[0].weight.requires_grad = False
+    net.V2[0].bias.requires_grad = False
+    net.V4[0].weight.requires_grad = False
+    net.V4[0].bias.requires_grad = False
+    net.IT[0].weight.requires_grad = False
+    net.IT[0].bias.requires_grad = False
 
     # learn periphery to fovea feedback weights
     net.fb[0].weight.requires_grad = True
@@ -541,7 +525,7 @@ def train_nets(p):
 
     nets = [nn.DataParallel(x) for x in nets]
 
-    [x.to('cuda') for x in nets]
+    [x.to(defaults.device) for x in nets]
 
     criterion = nn.CrossEntropyLoss()
 
