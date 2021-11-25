@@ -447,43 +447,45 @@ def inspect_results_test(res):
 
 def inspect_results(res):
 
-    tr_loss = res[0]
-    tr_acc = res[1]
-    te_loss = res[2]
-    te_acc = res[3]
-    cf_pred = res[4]
-    cf_y = res[5]
+    for r in res:
 
-    fig, ax = plt.subplots(1, 3, figsize=(10, 4), squeeze=False)
+        tr_loss = r[0]
+        tr_acc = r[1]
+        te_loss = r[2]
+        te_acc = r[3]
+        cf_pred = r[4]
+        cf_y = r[5]
 
-    cf_matrix = confusion_matrix(cf_y, cf_pred)
-    df_cm = pd.DataFrame(
-        cf_matrix,
-        index=[i for i in ["Same", "Different"]],
-        columns=[i for i in ["Same", "Different"]],
-    )
-    sn.heatmap(df_cm,
-               annot=True,
-               cbar=False,
-               cmap="Blues",
-               fmt="d",
-               ax=ax[0, 0])
-    ax[0, 0].set_xlabel("Predicted")
-    ax[0, 0].set_ylabel("Actual")
+        fig, ax = plt.subplots(1, 3, figsize=(10, 4), squeeze=False)
 
-    ax[0, 1].plot(tr_loss, label="Train")
-    ax[0, 1].plot(te_loss, label="Test")
-    ax[0, 1].set_xlabel("Epoch")
-    ax[0, 1].set_ylabel("Loss")
+        cf_matrix = confusion_matrix(cf_y, cf_pred)
+        df_cm = pd.DataFrame(
+            cf_matrix,
+            index=[i for i in ["Same", "Different"]],
+            columns=[i for i in ["Same", "Different"]],
+        )
+        sn.heatmap(df_cm,
+                annot=True,
+                cbar=False,
+                cmap="Blues",
+                fmt="d",
+                ax=ax[0, 0])
+        ax[0, 0].set_xlabel("Predicted")
+        ax[0, 0].set_ylabel("Actual")
 
-    ax[0, 2].plot(tr_acc, label="Train")
-    ax[0, 2].plot(te_acc, label="Test")
-    ax[0, 2].set_xlabel("Epoch")
-    ax[0, 2].set_ylabel("Accuracy")
+        ax[0, 1].plot(tr_loss, label="Train")
+        ax[0, 1].plot(te_loss, label="Test")
+        ax[0, 1].set_xlabel("Epoch")
+        ax[0, 1].set_ylabel("Loss")
 
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
+        ax[0, 2].plot(tr_acc, label="Train")
+        ax[0, 2].plot(te_acc, label="Test")
+        ax[0, 2].set_xlabel("Epoch")
+        ax[0, 2].set_ylabel("Accuracy")
+
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
 
 
 def train_nets(p):
