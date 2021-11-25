@@ -518,7 +518,7 @@ def train_nets(p):
                                    params_to_update),
                             lr=lr_min,
                             weight_decay=weight_decay)
-    net_0 = nn.DataParallel(net_0)
+    # net_0 = nn.DataParallel(net_0)
     net_0.to(defaults.device)
     criterion = nn.CrossEntropyLoss()
     p = (criterion, cycles, epochs, train_loader, test_loader)
