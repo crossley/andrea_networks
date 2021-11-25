@@ -16,7 +16,7 @@ class SiameseNet2(SiameseNet):
         self.head_mult = 2
 
         self.fb = nn.Sequential(
-            nn.Conv2d(1024, 3, kernel_size=3, stride=1, padding=197),
+            nn.Conv2d(1024, 3, kernel_size=3, stride=1, padding=221),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
         )
