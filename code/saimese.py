@@ -24,7 +24,7 @@ if __name__ == '__main__':
     # stim_path = Path(r'D:\Andrea_NN\stimuli\no_transf')
     stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
     # stim_path = Path('../samediff_no-transf')
-    epochs = 10
+    epochs = 100
     cycles = 1
     batch_sz = 24
     lr_min = 1e-4
