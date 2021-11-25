@@ -13,6 +13,8 @@ class SiameseNet2(SiameseNet):
 
         super(SiameseNet2, self).__init__(w_dropout_1, w_dropout_2, 3)
 
+        self.model_name = 'SiameseNet2'
+
         self.head_mult = 2
 
         self.fb = nn.Sequential(
