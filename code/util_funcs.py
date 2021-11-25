@@ -153,26 +153,27 @@ def make_dls(stim_path, batch_sz=24, seed=0, test_prop=0.2):
         fnames,
         bs=batch_sz,
         seed=seed,
-        # shuffle=True,
-        # device = 'cuda',
+        shuffle=True,
+        device = 'cuda',
     )
 
     # check that train and test splits have balanced classes
-    train_test = ["TRAIN", "TEST"]
-    for train_test_id in [0, 1]:
-        s = 0
-        d = 0
-        for item in dls.__getitem__(train_test_id).items:
-            # print(label_from_path(item))
-            # print(item)
-            # print('---')
-            if item[3] == 1:
-                s += 1
-            else:
-                d += 1
-        print(
-            f"{train_test[train_test_id]} SET (same, diff): {str(s)}, {str(d)}"
-        )
+    # train_test = ["TRAIN", "TEST"]
+    # for train_test_id in [0, 1]:
+    #     s = 0
+    #     d = 0
+    #     for item in dls.__getitem__(train_test_id).items:
+    #         # print(label_from_path(item))
+    #         # print(item)
+    #         # print('---')
+    #         if item[3] == 1:
+    #             s += 1
+    #         else:
+    #             d += 1
+    #     print(
+    #         f"{train_test[train_test_id]} SET (same, diff): {str(s)}, {str(d)}"
+    #     )
+
     return dls
 
 
@@ -528,7 +529,6 @@ def train_nets(p):
 
     nets = [nn.DataParallel(x) for x in nets]
 
-    print(defaults.device)
     [x.to(defaults.device) for x in nets]
 
     criterion = nn.CrossEntropyLoss()
