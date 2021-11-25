@@ -16,6 +16,7 @@ if __name__ == '__main__':
 
     print(device)
     print(defaults.device)
+    print(torch.cuda.device_count())
 
     seed = 30
     np.random.seed(seed)
