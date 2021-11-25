@@ -366,6 +366,7 @@ def train_net(net, optimizer, p):
                     te_running_loss,
                     100 * tr_correct / tr_total,
                     100 * te_correct / te_total,
+                    end-start
                 )
 
     return (tr_loss, tr_acc, te_loss, te_acc, cf_pred, cf_y)
@@ -420,7 +421,7 @@ def test_net(net, p):
                     te_loss.append(te_running_loss)
                     end = time.time() - start
                     print(cycle + 1, epoch + 1, te_running_loss,
-                          100 * te_correct / te_total)
+                          100 * te_correct / te_total, end - start)
 
         d = pd.DataFrame({
             'noise_var': v,
@@ -465,11 +466,11 @@ def inspect_results(res):
             columns=[i for i in ["Same", "Different"]],
         )
         sn.heatmap(df_cm,
-                annot=True,
-                cbar=False,
-                cmap="Blues",
-                fmt="d",
-                ax=ax[0, 0])
+                   annot=True,
+                   cbar=False,
+                   cmap="Blues",
+                   fmt="d",
+                   ax=ax[0, 0])
         ax[0, 0].set_xlabel("Predicted")
         ax[0, 0].set_ylabel("Actual")
 
@@ -535,7 +536,10 @@ def train_nets(p):
 
     res = [train_net(nets[x], optimizers[x], p) for x in range(len(nets))]
 
-    [torch.save(x.state_dict(), 'net_' + x.module.model_name + '.pth') for x in nets]
+    [
+        torch.save(x.state_dict(), 'net_' + x.module.model_name + '.pth')
+        for x in nets
+    ]
 
     inspect_results(res)
 

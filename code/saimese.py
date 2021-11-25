@@ -15,6 +15,7 @@ if __name__ == '__main__':
         "cuda" if torch.cuda.is_available() else "cpu")
 
     print(device)
+    print(defaults.device)
 
     seed = 30
     np.random.seed(seed)
