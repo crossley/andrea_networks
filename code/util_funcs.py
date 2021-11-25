@@ -154,7 +154,7 @@ def make_dls(stim_path, batch_sz=24, seed=0, test_prop=0.2):
         bs=batch_sz,
         seed=seed,
         shuffle=True,
-        device = 'cuda',
+        device='cuda',
     )
 
     # check that train and test splits have balanced classes
@@ -360,15 +360,13 @@ def train_net(net, optimizer, p):
                 te_acc.append(100 * te_correct / te_total)
                 te_loss.append(te_running_loss)
                 end = time.time() - start
-                print(
-                    cycle + 1,
-                    epoch + 1,
-                    tr_running_loss,
-                    te_running_loss,
-                    100 * tr_correct / tr_total,
-                    100 * te_correct / te_total,
-                    end-start
-                )
+                print("{0:0.2f}".format(cycle + 1),
+                      "{0:0.2f}".format(epoch + 1),
+                      "{0:0.2f}".format(tr_running_loss),
+                      "{0:0.2f}".format(te_running_loss),
+                      "{0:0.2f}".format(100 * tr_correct / tr_total),
+                      "{0:0.2f}".format(100 * te_correct / te_total),
+                      "{0:0.2f}".format(end - start))
 
     return (tr_loss, tr_acc, te_loss, te_acc, cf_pred, cf_y)
 
