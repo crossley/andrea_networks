@@ -528,6 +528,7 @@ def train_nets(p):
 
     nets = [nn.DataParallel(x) for x in nets]
 
+    print(defaults.device)
     [x.to(defaults.device) for x in nets]
 
     criterion = nn.CrossEntropyLoss()
