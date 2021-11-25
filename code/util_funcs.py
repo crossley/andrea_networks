@@ -512,35 +512,47 @@ def train_nets(p):
     net_3 = SiameseNet12(w_dropout_1, w_dropout_2)
     net_4 = SiameseNet22(w_dropout_1, w_dropout_2)
 
-    nets = [net_0, net_1, net_2, net_3, net_4]
-
-    [init_weights(x) for x in nets]
-    [init_pretrained_weights(x) for x in nets]
-
-    params_to_update = [x.parameters() for x in nets]
-
-    optimizers = [
-        optim.Adam(filter(lambda p: p.requires_grad, x),
-                   lr=lr_min,
-                   weight_decay=weight_decay) for x in params_to_update
-    ]
-
-    nets = [nn.DataParallel(x) for x in nets]
-
-    [x.to(defaults.device) for x in nets]
-
+    init_weights(net_0)
+    params_to_update = net_0.parameters()
+    optimizer = optim.Adam(filter(lambda p: p.requires_grad,
+                                   params_to_update),
+                            lr=lr_min,
+                            weight_decay=weight_decay)
+    net_0 = nn.DataParallel(net_0)
+    net_0.to(defaults.device)
     criterion = nn.CrossEntropyLoss()
-
     p = (criterion, cycles, epochs, train_loader, test_loader)
+    res = train_net(net_0, optimizer, p)
 
-    res = [train_net(nets[x], optimizers[x], p) for x in range(len(nets))]
+    # nets = [net_0, net_1, net_2, net_3, net_4]
 
-    [
-        torch.save(x.state_dict(), 'net_' + x.module.model_name + '.pth')
-        for x in nets
-    ]
+    # [init_weights(x) for x in nets]
+    # [init_pretrained_weights(x) for x in nets]
 
-    inspect_results(res)
+    # params_to_update = [x.parameters() for x in nets]
+
+    # optimizers = [
+    #     optim.Adam(filter(lambda p: p.requires_grad, x),
+    #                lr=lr_min,
+    #                weight_decay=weight_decay) for x in params_to_update
+    # ]
+
+    # nets = [nn.DataParallel(x) for x in nets]
+
+    # [x.to(defaults.device) for x in nets]
+
+    # criterion = nn.CrossEntropyLoss()
+
+    # p = (criterion, cycles, epochs, train_loader, test_loader)
+
+    # res = [train_net(nets[x], optimizers[x], p) for x in range(len(nets))]
+
+    # [
+    #     torch.save(x.state_dict(), 'net_' + x.module.model_name + '.pth')
+    #     for x in nets
+    # ]
+
+    # inspect_results(res)
 
 
 def test_nets_noise():
