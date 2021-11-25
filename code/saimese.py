@@ -10,9 +10,12 @@ from util_funcs import *
 
 if __name__ == '__main__':
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    defaults.device = torch.device(
-        "cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # defaults.device = torch.device(
+    #     "cuda" if torch.cuda.is_available() else "cpu")
+
+    device = 'cpu'
+    defaults.device = 'cpu'
 
     print(device)
     print(defaults.device)
