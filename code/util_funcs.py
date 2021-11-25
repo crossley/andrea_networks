@@ -533,7 +533,7 @@ def train_nets(p):
 
     res = [train_net(nets[x], optimizers[x], p) for x in range(len(nets))]
 
-    [torch.save(x.state_dict(), 'net_' + x.model_name + '.pth') for x in nets]
+    [torch.save(x.state_dict(), 'net_' + x.module.model_name + '.pth') for x in nets]
 
     inspect_results(res)
 
