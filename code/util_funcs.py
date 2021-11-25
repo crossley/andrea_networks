@@ -550,7 +550,7 @@ def test_nets_noise():
     nets = [nn.DataParallel(x) for x in nets]
 
     [
-        x.load_state_dict(torch.load('net_' + x.model_name + '.pth'))
+        x.load_state_dict(torch.load('net_' + x.module.model_name + '.pth'))
         for x in nets
     ]
 
