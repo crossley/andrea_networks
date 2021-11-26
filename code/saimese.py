@@ -39,8 +39,8 @@ if __name__ == '__main__':
     p = (stim_path, epochs, cycles, batch_sz, lr_min, weight_decay,
          w_dropout_1, w_dropout_2, seed)
 
-    train_nets(p)
-    # test_nets_noise()
+    # train_nets(p)
+    test_nets_noise(p)
 
     # TODO:
     # add model name to classes

@@ -559,7 +559,23 @@ def train_nets(p):
     inspect_results(res)
 
 
-def test_nets_noise():
+def test_nets_noise(p):
+    
+    stim_path = p[0]
+    epochs = p[1]
+    cycles = p[2]
+    batch_sz = p[3]
+    lr_min = p[4]
+    weight_decay = p[5]
+    w_dropout_1 = p[6]
+    w_dropout_2 = p[7]
+    seed = p[8]
+    
+    dls = make_dls(stim_path, batch_sz, seed)
+    train_loader = dls.train
+    test_loader = dls.valid
+    # dls.show_batch(max_n = 2)
+    # plt.show()
 
     net_0 = SiameseNet0(w_dropout_1, w_dropout_2)
     net_1 = SiameseNet1(w_dropout_1, w_dropout_2)
@@ -579,7 +595,7 @@ def test_nets_noise():
 
     cycles = 1
     epochs = 1
-    noise_levels = np.linspace(0.0, 3.0, 30)
+    noise_levels = np.linspace(0.0, 3.0, 100)
     batch_sz = test_loader.n
 
     p = (cycles, epochs, train_loader, test_loader, noise_levels)
