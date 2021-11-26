@@ -299,6 +299,8 @@ def init_pretrained_weights(net):
     try:
         net.fb[0].weight.requires_grad = True
         net.fb[0].bias.requires_grad = True
+    except:
+        pass
 
     return net
 
