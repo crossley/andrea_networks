@@ -17,12 +17,6 @@ class SiameseNet0(SiameseNet):
 
         self.head_mult = 2
 
-        self.fb = nn.Sequential(
-            nn.Conv2d(128, 3, kernel_size=3, stride=1, padding=197),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
-        )
-
     def forward(self, inp):
 
         inp1 = inp[0]
