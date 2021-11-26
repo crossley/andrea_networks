@@ -296,8 +296,9 @@ def init_pretrained_weights(net):
     net.IT[0].bias.requires_grad = False
 
     # learn periphery to fovea feedback weights
-    net.fb[0].weight.requires_grad = True
-    net.fb[0].bias.requires_grad = True
+    try:
+        net.fb[0].weight.requires_grad = True
+        net.fb[0].bias.requires_grad = True
 
     return net
 
