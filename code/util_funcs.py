@@ -102,7 +102,6 @@ def ImageTupleBlock():
 
 
 def get_tuples_no_noise(files):
-
     return [[
         get_img_tuple_no_noise(f)[0],
         get_img_tuple_no_noise(f)[1],
@@ -374,7 +373,51 @@ def train_net(net, optimizer, p):
     return (tr_loss, tr_acc, te_loss, te_acc, cf_pred, cf_y)
 
 
-def test_net(net, p):
+def test_net_fov_decode(net, p):
+
+    cycles = p[0]
+    epochs = p[1]
+    train_loader = p[2]
+    test_loader = p[3]
+    noise_vars = p[4]
+
+    X = []
+    y = []
+    res = []
+
+    # TODO: Here, we need to assess if image category can be decoded via
+    # something like MVPA from fov V1. We first need to extract X and y and
+    # then pipe into a standard sklearn svm pipeline.
+
+    # TODO: Does it make sense to revise the def of model 0 to include FB?
+    net.fb.register_forward_hook(lambda m, input, output: print(output))
+
+    net.eval()
+    with torch.no_grad():
+        for (inputs, labels) in train_loader:
+
+            # TODO: get activation in v1 ROIs
+            # TODO: With the hook above, I believe this will only print.
+            # TODO: Revise from here...
+            X = net(inputs)
+            y = labels
+
+    # skf = StratifiedKFold(n_splits=5)
+
+    # for train_index, test_index in skf.split(X, y):
+    #     print("TRAIN:", train_index, "TEST:", test_index)
+    #     X_train, X_test = X[train_index], X[test_index]
+    #     y_train, y_test = y[train_index], y[test_index]
+
+    # clf = make_pipeline(StandardScaler(), SVC())
+
+    # clf = svm.SVC()
+    # clf.fit(X, y)
+
+    return res
+
+
+def test_net_noise(net, p):
 
     cycles = p[0]
     epochs = p[1]
@@ -430,6 +473,70 @@ def test_net(net, p):
             'te_loss': te_loss,
             'te_acc': te_acc
         })
+        res.append(d)
+
+    res = pd.concat(res)
+
+    return res
+
+
+def test_net_fovimg(net, p):
+
+    cycles = p[0]
+    epochs = p[1]
+    train_loader = p[2]
+    test_loader = p[3]
+    train_loader_same = p[4]
+    test_loader_same = p[5]
+    train_loader_diff = p[6]
+    test_loader_diff = p[7]
+
+    tl_list = [train_loader, train_loader_same, train_loader_diff]
+
+    res = []
+
+    for tl in tl_list:
+
+        for cycle in range(cycles):
+
+            tr_loss = []
+            tr_acc = []
+            te_loss = []
+            te_acc = []
+
+            for epoch in range(epochs):
+
+                net.eval()
+
+                te_running_loss = 0.0
+                te_correct = 0
+                te_total = 0
+                cf_pred = []
+                cf_y = []
+                with torch.no_grad():
+                    start = time.time()
+                    for (inputs, labels) in tl:
+
+                        inputs = (
+                            inputs[0], inputs[1], inputs[2] +
+                            v * torch.randn(inputs[2].shape, device='cuda'))
+
+                        out = net(inputs)
+                        _, pred = torch.max(out, 1)
+                        loss = criterion(out, labels)
+                        te_running_loss += loss.item()
+                        te_total += labels.size(0)
+                        te_correct += (pred == labels).sum().item()
+                        cf_y += labels.cpu().detach().tolist()
+                        cf_pred += pred.cpu().detach().tolist()
+
+                    te_acc.append(100 * te_correct / te_total)
+                    te_loss.append(te_running_loss)
+                    end = time.time() - start
+                    print(cycle + 1, epoch + 1, te_running_loss,
+                          100 * te_correct / te_total, end)
+
+        d = pd.DataFrame({'tl': tl, 'te_loss': te_loss, 'te_acc': te_acc})
         res.append(d)
 
     res = pd.concat(res)
@@ -517,10 +624,9 @@ def train_nets(p):
 
     init_weights(net_0)
     params_to_update = net_0.parameters()
-    optimizer = optim.Adam(filter(lambda p: p.requires_grad,
-                                   params_to_update),
-                            lr=lr_min,
-                            weight_decay=weight_decay)
+    optimizer = optim.Adam(filter(lambda p: p.requires_grad, params_to_update),
+                           lr=lr_min,
+                           weight_decay=weight_decay)
 
     # net_0 = nn.DataParallel(net_0)
     # net_0.to(defaults.device)
@@ -560,7 +666,7 @@ def train_nets(p):
 
 
 def test_nets_noise(p):
-    
+
     stim_path = p[0]
     epochs = p[1]
     cycles = p[2]
@@ -570,12 +676,6 @@ def test_nets_noise(p):
     w_dropout_1 = p[6]
     w_dropout_2 = p[7]
     seed = p[8]
-    
-    dls = make_dls(stim_path, batch_sz, seed)
-    train_loader = dls.train
-    test_loader = dls.valid
-    # dls.show_batch(max_n = 2)
-    # plt.show()
 
     net_0 = SiameseNet0(w_dropout_1, w_dropout_2)
     net_1 = SiameseNet1(w_dropout_1, w_dropout_2)
@@ -593,6 +693,12 @@ def test_nets_noise(p):
 
     [x.to('cuda') for x in nets]
 
+    dls = make_dls(stim_path, batch_sz, seed)
+    train_loader = dls.train
+    test_loader = dls.valid
+    # dls.show_batch(max_n = 2)
+    # plt.show()
+
     cycles = 1
     epochs = 1
     noise_levels = np.linspace(0.0, 3.0, 100)
@@ -600,6 +706,263 @@ def test_nets_noise(p):
 
     p = (cycles, epochs, train_loader, test_loader, noise_levels)
 
-    res = [test_net(x, p) for x in nets]
+    res = [test_net_noise(x, p) for x in nets]
 
     inspect_results_test(res)
+
+
+def test_nets_fovimg(p):
+
+    stim_path = p[0]
+    epochs = p[1]
+    cycles = p[2]
+    batch_sz = p[3]
+    lr_min = p[4]
+    weight_decay = p[5]
+    w_dropout_1 = p[6]
+    w_dropout_2 = p[7]
+    seed = p[8]
+
+    net_0 = SiameseNet0(w_dropout_1, w_dropout_2)
+    net_1 = SiameseNet1(w_dropout_1, w_dropout_2)
+    net_2 = SiameseNet2(w_dropout_1, w_dropout_2)
+    net_3 = SiameseNet12(w_dropout_1, w_dropout_2)
+    net_4 = SiameseNet22(w_dropout_1, w_dropout_2)
+
+    nets = [net_0, net_1, net_2, net_3, net_4]
+    nets = [nn.DataParallel(x) for x in nets]
+
+    [
+        x.load_state_dict(torch.load('net_' + x.module.model_name + '.pth'))
+        for x in nets
+    ]
+
+    [x.to('cuda') for x in nets]
+
+    dls = make_dls(stim_path, batch_sz, seed)
+    train_loader = dls.train
+    test_loader = dls.valid
+    # dls.show_batch(max_n = 2)
+    # plt.show()
+
+    dls_same = make_dls_fov_same(stim_path, batch_sz, seed)
+    train_loader_same = dls_same.train
+    test_loader_same = dls_same.valid
+
+    dls_diff = make_dls_fov_diff(stim_path, batch_sz, seed)
+    train_loader_diff = dls_diff.train
+    test_loader_diff = dls_diff.valid
+
+    cycles = 1
+    epochs = 1
+    noise_levels = np.linspace(0.0, 3.0, 100)
+    batch_sz = test_loader.n
+
+    p = (cycles, epochs, train_loader, test_loader, train_loader_same,
+         test_loader_same, train_loader_diff, test_loader_diff)
+
+    res = [test_net_fovimg(x, p) for x in nets]
+
+    # TODO: need to implement this
+    inspect_results_test_fovimg(res)
+
+
+def get_img_tuples_fov_same(path):
+    root = os.path.dirname(path)
+
+    pair = Image.open(path)
+    pair_basename = os.path.basename(path).split('_')
+
+    fov_cat = pair_basename[-2][0]  # b
+    fov_img_id = f'{fov_cat}{str(random.randint(1,30))}'  # b1
+    fov_basename = pair_basename[:-2]
+    fov_basename.extend([fov_img_id, fov_img_id + '.png'])
+    fov_basename = '_'.join(fov_basename)
+    fov_path = os.path.join(root, fov_basename)
+    fov_pair = Image.open(fov_path)
+
+    label = label_func(Path(path))
+    orientation = os.path.basename(path).split("_")[-3]
+
+    width, height = pair.size
+
+    if orientation == "normal":
+        left1, top1, right1, bottom1 = width - width // 4, 0, width, height // 4
+        left2, top2, right2, bottom2 = 0, height - height // 4, width // 4, height
+    else:
+        left1, top1, right1, bottom1 = 0, 0, width // 4, height // 4
+        left2, top2, right2, bottom2 = (
+            width - width // 4,
+            height - height // 4,
+            width,
+            height,
+        )
+
+    im1 = pair.crop((left1, top1, right1, bottom1)).resize((224, 224))
+    im2 = pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
+    im3 = fov_pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
+
+    return (
+        ToTensor()(PILImage(im1)),
+        ToTensor()(PILImage(im2)),
+        ToTensor()(PILImage(im3)),
+        label,
+    )
+
+
+def get_img_tuples_fov_diff(path):
+    root = os.path.dirname(path)
+
+    pair = Image.open(path)
+    pair_basename = os.path.basename(path).split('_')
+    per_cat = pair_basename[-2][0]  # c
+
+    cats = ['b', 'c', 'f', 'm']
+    cats.remove(per_cat)
+
+    fov_cat = cats[random.randint(0, 2)]  # b
+    fov_img_id = f'{fov_cat}{str(random.randint(1,30))}'  # b1
+    fov_basename = pair_basename[:-2]
+    fov_basename.extend([fov_img_id, fov_img_id + '.png'])
+    fov_basename = '_'.join(fov_basename)
+    fov_path = os.path.join(root, fov_basename)
+    fov_pair = Image.open(fov_path)
+
+    label = label_func(Path(path))
+    orientation = os.path.basename(path).split("_")[-3]
+
+    width, height = pair.size
+
+    if orientation == "normal":
+        left1, top1, right1, bottom1 = width - width // 4, 0, width, height // 4
+        left2, top2, right2, bottom2 = 0, height - height // 4, width // 4, height
+    else:
+        left1, top1, right1, bottom1 = 0, 0, width // 4, height // 4
+        left2, top2, right2, bottom2 = (
+            width - width // 4,
+            height - height // 4,
+            width,
+            height,
+        )
+
+    im1 = pair.crop((left1, top1, right1, bottom1)).resize((224, 224))
+    im2 = pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
+    im3 = fov_pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
+
+    return (
+        ToTensor()(PILImage(im1)),
+        ToTensor()(PILImage(im2)),
+        ToTensor()(PILImage(im3)),
+        label,
+    )
+
+
+def make_dls_fov_same(stim_path, batch_sz=24, seed=0, test_prop=0.2):
+
+    stim_path = Path(stim_path)
+    pairs = glob.glob(os.path.join(stim_path, "*.png"))
+    fnames = sorted(Path(s) for s in pairs)
+    y = [label_func(item) for item in fnames]
+
+    splitter = TrainTestSplitter(test_size=test_prop,
+                                 random_state=42,
+                                 shuffle=True,
+                                 stratify=y)
+    splits = splitter(fnames)
+    # splits = RandomSplitter()(fnames)
+    siamese = DataBlock(
+        blocks=(ImageTupleBlock, CategoryBlock),
+        get_items=get_tuple_fov_same,
+        get_x=get_x,
+        get_y=get_y,
+        splitter=splitter,
+    )
+
+    dls = siamese.dataloaders(
+        fnames,
+        bs=batch_sz,
+        seed=seed,
+        shuffle=True,
+        device=defaults.device,
+    )
+
+    return dls
+
+
+def make_dls_fov_diff(stim_path, batch_sz=24, seed=0, test_prop=0.2):
+
+    stim_path = Path(stim_path)
+    pairs = glob.glob(os.path.join(stim_path, "*.png"))
+    fnames = sorted(Path(s) for s in pairs)
+    y = [label_func(item) for item in fnames]
+
+    splitter = TrainTestSplitter(test_size=test_prop,
+                                 random_state=42,
+                                 shuffle=True,
+                                 stratify=y)
+    splits = splitter(fnames)
+    # splits = RandomSplitter()(fnames)
+    siamese = DataBlock(
+        blocks=(ImageTupleBlock, CategoryBlock),
+        get_items=get_tuple_fov_diff,
+        get_x=get_x,
+        get_y=get_y,
+        splitter=splitter,
+    )
+
+    dls = siamese.dataloaders(
+        fnames,
+        bs=batch_sz,
+        seed=seed,
+        shuffle=True,
+        device=defaults.device,
+    )
+
+    return dls
+
+
+def test_nets_fov_decode(p):
+
+    stim_path = p[0]
+    epochs = p[1]
+    cycles = p[2]
+    batch_sz = p[3]
+    lr_min = p[4]
+    weight_decay = p[5]
+    w_dropout_1 = p[6]
+    w_dropout_2 = p[7]
+    seed = p[8]
+
+    net_0 = SiameseNet0(w_dropout_1, w_dropout_2)
+    net_1 = SiameseNet1(w_dropout_1, w_dropout_2)
+    net_2 = SiameseNet2(w_dropout_1, w_dropout_2)
+    net_3 = SiameseNet12(w_dropout_1, w_dropout_2)
+    net_4 = SiameseNet22(w_dropout_1, w_dropout_2)
+
+    nets = [net_0, net_1, net_2, net_3, net_4]
+    nets = [nn.DataParallel(x) for x in nets]
+
+    [
+        x.load_state_dict(torch.load('net_' + x.module.model_name + '.pth'))
+        for x in nets
+    ]
+
+    [x.to('cuda') for x in nets]
+
+    dls = make_dls(stim_path, batch_sz, seed)
+    train_loader = dls.train
+    test_loader = dls.valid
+    # dls.show_batch(max_n = 2)
+    # plt.show()
+
+    cycles = 1
+    epochs = 1
+    noise_levels = np.linspace(0.0, 3.0, 100)
+    batch_sz = test_loader.n
+
+    p = (cycles, epochs, train_loader, test_loader)
+
+    res = [test_net_fov_decode(x, p) for x in nets]
+
+    # TODO: need to implement this
+    inspect_results_test_fov_decode(res)
