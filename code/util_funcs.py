@@ -145,7 +145,7 @@ def get_img_tuple_noise(path):
     )
 
 
-def get_img_tuples_fov_same(path):
+def get_img_tuple_fov_same(path):
     root = os.path.dirname(path)
 
     pair = Image.open(path)
@@ -188,7 +188,7 @@ def get_img_tuples_fov_same(path):
     )
 
 
-def get_img_tuples_fov_diff(path):
+def get_img_tuple_fov_diff(path):
     root = os.path.dirname(path)
 
     pair = Image.open(path)
@@ -671,10 +671,13 @@ def test_net_fovimg(net, p):
     test_loader_diff = p[7]
 
     tl_list = [train_loader, train_loader_same, train_loader_diff]
+    tl_names = ['base', 'same', 'diff']
 
     res = []
+    
+    criterion = nn.CrossEntropyLoss()
 
-    for tl in tl_list:
+    for ii, tl in enumerate(tl_list):
 
         for cycle in range(cycles):
 
@@ -696,10 +699,6 @@ def test_net_fovimg(net, p):
                     start = time.time()
                     for (inputs, labels) in tl:
 
-                        inputs = (
-                            inputs[0], inputs[1], inputs[2] +
-                            v * torch.randn(inputs[2].shape, device='cuda'))
-
                         out = net(inputs)
                         _, pred = torch.max(out, 1)
                         loss = criterion(out, labels)
@@ -715,7 +714,7 @@ def test_net_fovimg(net, p):
                     print(cycle + 1, epoch + 1, te_running_loss,
                           100 * te_correct / te_total, end)
 
-        d = pd.DataFrame({'tl': tl, 'te_loss': te_loss, 'te_acc': te_acc})
+        d = pd.DataFrame({'net': net.module.model_name, 'tl': [tl_names[ii]], 'te_loss': te_loss, 'te_acc': te_acc})
         res.append(d)
 
     res = pd.concat(res)
@@ -807,11 +806,8 @@ def train_nets(p):
                            lr=lr_min,
                            weight_decay=weight_decay)
 
-    # net_0 = nn.DataParallel(net_0)
-    # net_0.to(defaults.device)
-    # criterion = nn.CrossEntropyLoss()
-    # p = (criterion, cycles, epochs, train_loader, test_loader)
-    # res = train_net(net_0, optimizer, p)
+
+    criterion = nn.CrossEntropyLoss()
 
     nets = [net_0, net_1, net_2, net_3, net_4]
 
