@@ -6,7 +6,6 @@ Created on Sun Nov 21 10:03:25 2021
 """
 
 from fastai.vision.all import *
-from kornia import rgb_to_grayscale
 import torch.nn as nn
 import warnings
 import random, textwrap
