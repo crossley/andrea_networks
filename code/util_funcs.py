@@ -887,7 +887,7 @@ def test_nets_noise(p):
 
     res = [test_net_noise(x, p) for x in nets]
 
-    inspect_results_test(res)
+    return res
 
 
 def test_nets_fovimg(p):
@@ -942,8 +942,7 @@ def test_nets_fovimg(p):
 
     res = [test_net_fovimg(x, p) for x in nets]
 
-    # TODO: need to implement this
-    inspect_results_test_fovimg(res)
+    return res
 
 
 def test_nets_fov_decode(p):
@@ -989,5 +988,4 @@ def test_nets_fov_decode(p):
 
     res = [test_net_fov_decode(x, p) for x in nets]
 
-    # TODO: need to implement this
-    inspect_results_test_fov_decode(res)
+    return res

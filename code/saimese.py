@@ -5,6 +5,11 @@ Created on Sat Nov 20 16:08:56 2021
 @author: mq20185996
 """
 
+# TODO:
+# Try different feedback architectures
+# - fully interconnected vs conv
+# Deep net to fMRI mapping
+
 from imports import *
 from util_funcs import *
 
@@ -37,11 +42,14 @@ if __name__ == '__main__':
          w_dropout_1, w_dropout_2, seed)
 
     # train_nets(p)
-    # test_nets_noise(p)
-    test_nets_fovimg(p)
-    test_nets_fov_decode(p)
 
-    # TODO:
-    # Different feedback architectures
-    # - fully interconnected vs conv
-    # Deep net to fMRI mapping
+    # res = test_nets_noise(p)
+    # inspect_results_test(res)
+
+    res = test_nets_fovimg(p)
+    # TODO: need to implement this
+    # inspect_results_test_fovimg(res)
+
+    # res = test_nets_fov_decode(p)
+    # TODO: need to implement this
+    # inspect_results_test_fov_decode(res)
