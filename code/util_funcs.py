@@ -885,7 +885,7 @@ def test_nets_noise(p):
 
     cycles = 1
     epochs = 1
-    noise_levels = np.linspace(0.0, 3.0, 100)
+    noise_levels = np.linspace(0.0,2.0, 10)
     batch_sz = test_loader.n
 
     p = (cycles, epochs, train_loader, test_loader, noise_levels)

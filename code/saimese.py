@@ -43,12 +43,12 @@ if __name__ == '__main__':
 
     # train_nets(p)
 
-    # res = test_nets_noise(p)
+    res = test_nets_noise(p)
     # inspect_results_test(res)
 
-    res = test_nets_fovimg(p)
-    res = pd.concat(res)
-    print(res)
+    # res = test_nets_fovimg(p)
+    # res = pd.concat(res)
+    # print(res)
     # TODO: need to implement this
     # inspect_results_test_fovimg(res)
 
