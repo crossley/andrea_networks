@@ -698,6 +698,15 @@ def test_net_fovimg(net, p):
                 with torch.no_grad():
                     start = time.time()
                     for (inputs, labels) in tl:
+                        
+                        fig, ax = plt.subplots(1, 3, squeeze=False)
+                        fov_img = inputs[2].detach().cpu().numpy()
+                        p1_img = inputs[0].detach().cpu().numpy()
+                        p2_img = inputs[1].detach().cpu().numpy()
+                        ax[0, 0].imshow(p1_img[0, 0, :, :])
+                        ax[0, 1].imshow(p2_img[0, 0, :, :])
+                        ax[0, 2].imshow(fov_img[0, 0, :, :])
+                        plt.show()
 
                         out = net(inputs)
                         _, pred = torch.max(out, 1)
