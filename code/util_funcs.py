@@ -13,6 +13,69 @@ def label_func(path):
     return 0 if split_name[-1] == split_name[-2] else 1
 
 
+def get_x(t):
+    return t[:3]
+
+
+def get_y(t):
+    return t[3]
+
+
+class ImageTuple(fastuple):
+    @classmethod
+    def create(cls, fns):
+        return cls(fns)
+
+    def show(self, ctx=None, **kwargs):
+        t1, t2, t3 = self
+        if (not isinstance(t1, Tensor) or not isinstance(t2, Tensor)
+                or t1.shape != t2.shape):
+            return ctx
+        line = t1.new_zeros(t1.shape[0], t1.shape[1], 10)
+        return show_image(torch.cat([t1, line, t2], dim=2), ctx=ctx, **kwargs)
+
+
+def ImageTupleBlock():
+    return TransformBlock(type_tfms=ImageTuple.create,
+                          batch_tfms=IntToFloatTensor)
+
+
+def get_tuples_no_noise(files):
+    return [[
+        get_img_tuple_no_noise(f)[0],
+        get_img_tuple_no_noise(f)[1],
+        get_img_tuple_no_noise(f)[2],
+        get_img_tuple_no_noise(f)[3],
+    ] for f in files]
+
+
+def get_tuples_noise(files):
+    return [[
+        get_img_tuple_noise(f)[0],
+        get_img_tuple_noise(f)[1],
+        get_img_tuple_noise(f)[2],
+        get_img_tuple_noise(f)[3],
+    ] for f in files]
+
+
+def get_tuples_fov_same(files):
+    return [[
+        get_img_tuple_fov_same(f)[0],
+        get_img_tuple_fov_same(f)[1],
+        get_img_tuple_fov_same(f)[2],
+        get_img_tuple_fov_same(f)[3],
+    ] for f in files]
+
+
+def get_tuples_fov_diff(files):
+    return [[
+        get_img_tuple_fov_diff(f)[0],
+        get_img_tuple_fov_diff(f)[1],
+        get_img_tuple_fov_diff(f)[2],
+        get_img_tuple_fov_diff(f)[3],
+    ] for f in files]
+
+
 def get_img_tuple_no_noise(path):
     pair = Image.open(path)
 
@@ -82,49 +145,94 @@ def get_img_tuple_noise(path):
     )
 
 
-class ImageTuple(fastuple):
-    @classmethod
-    def create(cls, fns):
-        return cls(fns)
+def get_img_tuples_fov_same(path):
+    root = os.path.dirname(path)
 
-    def show(self, ctx=None, **kwargs):
-        t1, t2, t3 = self
-        if (not isinstance(t1, Tensor) or not isinstance(t2, Tensor)
-                or t1.shape != t2.shape):
-            return ctx
-        line = t1.new_zeros(t1.shape[0], t1.shape[1], 10)
-        return show_image(torch.cat([t1, line, t2], dim=2), ctx=ctx, **kwargs)
+    pair = Image.open(path)
+    pair_basename = os.path.basename(path).split('_')
+
+    fov_cat = pair_basename[-2][0]  # b
+    fov_img_id = f'{fov_cat}{str(random.randint(1,30))}'  # b1
+    fov_basename = pair_basename[:-2]
+    fov_basename.extend([fov_img_id, fov_img_id + '.png'])
+    fov_basename = '_'.join(fov_basename)
+    fov_path = os.path.join(root, fov_basename)
+    fov_pair = Image.open(fov_path)
+
+    label = label_func(Path(path))
+    orientation = os.path.basename(path).split("_")[-3]
+
+    width, height = pair.size
+
+    if orientation == "normal":
+        left1, top1, right1, bottom1 = width - width // 4, 0, width, height // 4
+        left2, top2, right2, bottom2 = 0, height - height // 4, width // 4, height
+    else:
+        left1, top1, right1, bottom1 = 0, 0, width // 4, height // 4
+        left2, top2, right2, bottom2 = (
+            width - width // 4,
+            height - height // 4,
+            width,
+            height,
+        )
+
+    im1 = pair.crop((left1, top1, right1, bottom1)).resize((224, 224))
+    im2 = pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
+    im3 = fov_pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
+
+    return (
+        ToTensor()(PILImage(im1)),
+        ToTensor()(PILImage(im2)),
+        ToTensor()(PILImage(im3)),
+        label,
+    )
 
 
-def ImageTupleBlock():
-    return TransformBlock(type_tfms=ImageTuple.create,
-                          batch_tfms=IntToFloatTensor)
+def get_img_tuples_fov_diff(path):
+    root = os.path.dirname(path)
 
+    pair = Image.open(path)
+    pair_basename = os.path.basename(path).split('_')
+    per_cat = pair_basename[-2][0]  # c
 
-def get_tuples_no_noise(files):
-    return [[
-        get_img_tuple_no_noise(f)[0],
-        get_img_tuple_no_noise(f)[1],
-        get_img_tuple_no_noise(f)[2],
-        get_img_tuple_no_noise(f)[3],
-    ] for f in files]
+    cats = ['b', 'c', 'f', 'm']
+    cats.remove(per_cat)
 
+    fov_cat = cats[random.randint(0, 2)]  # b
+    fov_img_id = f'{fov_cat}{str(random.randint(1,30))}'  # b1
+    fov_basename = pair_basename[:-2]
+    fov_basename.extend([fov_img_id, fov_img_id + '.png'])
+    fov_basename = '_'.join(fov_basename)
+    fov_path = os.path.join(root, fov_basename)
+    fov_pair = Image.open(fov_path)
 
-def get_tuples_noise(files):
-    return [[
-        get_img_tuple_noise(f)[0],
-        get_img_tuple_noise(f)[1],
-        get_img_tuple_noise(f)[2],
-        get_img_tuple_noise(f)[3],
-    ] for f in files]
+    label = label_func(Path(path))
+    orientation = os.path.basename(path).split("_")[-3]
 
+    width, height = pair.size
 
-def get_x(t):
-    return t[:3]
+    if orientation == "normal":
+        left1, top1, right1, bottom1 = width - width // 4, 0, width, height // 4
+        left2, top2, right2, bottom2 = 0, height - height // 4, width // 4, height
+    else:
+        left1, top1, right1, bottom1 = 0, 0, width // 4, height // 4
+        left2, top2, right2, bottom2 = (
+            width - width // 4,
+            height - height // 4,
+            width,
+            height,
+        )
 
+    im1 = pair.crop((left1, top1, right1, bottom1)).resize((224, 224))
+    im2 = pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
+    im3 = fov_pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
 
-def get_y(t):
-    return t[3]
+    return (
+        ToTensor()(PILImage(im1)),
+        ToTensor()(PILImage(im2)),
+        ToTensor()(PILImage(im3)),
+        label,
+    )
 
 
 def make_dls(stim_path, batch_sz=24, seed=0, test_prop=0.2):
@@ -172,6 +280,70 @@ def make_dls(stim_path, batch_sz=24, seed=0, test_prop=0.2):
     #     print(
     #         f"{train_test[train_test_id]} SET (same, diff): {str(s)}, {str(d)}"
     #     )
+
+    return dls
+
+
+def make_dls_fov_same(stim_path, batch_sz=24, seed=0, test_prop=0.2):
+
+    stim_path = Path(stim_path)
+    pairs = glob.glob(os.path.join(stim_path, "*.png"))
+    fnames = sorted(Path(s) for s in pairs)
+    y = [label_func(item) for item in fnames]
+
+    splitter = TrainTestSplitter(test_size=test_prop,
+                                 random_state=42,
+                                 shuffle=True,
+                                 stratify=y)
+    splits = splitter(fnames)
+    # splits = RandomSplitter()(fnames)
+    siamese = DataBlock(
+        blocks=(ImageTupleBlock, CategoryBlock),
+        get_items=get_tuples_fov_same,
+        get_x=get_x,
+        get_y=get_y,
+        splitter=splitter,
+    )
+
+    dls = siamese.dataloaders(
+        fnames,
+        bs=batch_sz,
+        seed=seed,
+        shuffle=True,
+        device=defaults.device,
+    )
+
+    return dls
+
+
+def make_dls_fov_diff(stim_path, batch_sz=24, seed=0, test_prop=0.2):
+
+    stim_path = Path(stim_path)
+    pairs = glob.glob(os.path.join(stim_path, "*.png"))
+    fnames = sorted(Path(s) for s in pairs)
+    y = [label_func(item) for item in fnames]
+
+    splitter = TrainTestSplitter(test_size=test_prop,
+                                 random_state=42,
+                                 shuffle=True,
+                                 stratify=y)
+    splits = splitter(fnames)
+    # splits = RandomSplitter()(fnames)
+    siamese = DataBlock(
+        blocks=(ImageTupleBlock, CategoryBlock),
+        get_items=get_tuples_fov_diff,
+        get_x=get_x,
+        get_y=get_y,
+        splitter=splitter,
+    )
+
+    dls = siamese.dataloaders(
+        fnames,
+        bs=batch_sz,
+        seed=seed,
+        shuffle=True,
+        device=defaults.device,
+    )
 
     return dls
 
@@ -416,10 +588,7 @@ def test_net_fov_decode(net, p):
         y_train, y_test = y[train_index], y[test_index]
         clf.fit(X_train, y_train)
         acc = clf.score(X_test, y_test)
-        d = pd.DataFrame({
-            'fold': f,
-            'acc': acc
-        })
+        d = pd.DataFrame({'fold': f, 'acc': acc})
         res.append(d)
 
     res = pd.concat(res)
@@ -775,160 +944,6 @@ def test_nets_fovimg(p):
 
     # TODO: need to implement this
     inspect_results_test_fovimg(res)
-
-
-def get_img_tuples_fov_same(path):
-    root = os.path.dirname(path)
-
-    pair = Image.open(path)
-    pair_basename = os.path.basename(path).split('_')
-
-    fov_cat = pair_basename[-2][0]  # b
-    fov_img_id = f'{fov_cat}{str(random.randint(1,30))}'  # b1
-    fov_basename = pair_basename[:-2]
-    fov_basename.extend([fov_img_id, fov_img_id + '.png'])
-    fov_basename = '_'.join(fov_basename)
-    fov_path = os.path.join(root, fov_basename)
-    fov_pair = Image.open(fov_path)
-
-    label = label_func(Path(path))
-    orientation = os.path.basename(path).split("_")[-3]
-
-    width, height = pair.size
-
-    if orientation == "normal":
-        left1, top1, right1, bottom1 = width - width // 4, 0, width, height // 4
-        left2, top2, right2, bottom2 = 0, height - height // 4, width // 4, height
-    else:
-        left1, top1, right1, bottom1 = 0, 0, width // 4, height // 4
-        left2, top2, right2, bottom2 = (
-            width - width // 4,
-            height - height // 4,
-            width,
-            height,
-        )
-
-    im1 = pair.crop((left1, top1, right1, bottom1)).resize((224, 224))
-    im2 = pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
-    im3 = fov_pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
-
-    return (
-        ToTensor()(PILImage(im1)),
-        ToTensor()(PILImage(im2)),
-        ToTensor()(PILImage(im3)),
-        label,
-    )
-
-
-def get_img_tuples_fov_diff(path):
-    root = os.path.dirname(path)
-
-    pair = Image.open(path)
-    pair_basename = os.path.basename(path).split('_')
-    per_cat = pair_basename[-2][0]  # c
-
-    cats = ['b', 'c', 'f', 'm']
-    cats.remove(per_cat)
-
-    fov_cat = cats[random.randint(0, 2)]  # b
-    fov_img_id = f'{fov_cat}{str(random.randint(1,30))}'  # b1
-    fov_basename = pair_basename[:-2]
-    fov_basename.extend([fov_img_id, fov_img_id + '.png'])
-    fov_basename = '_'.join(fov_basename)
-    fov_path = os.path.join(root, fov_basename)
-    fov_pair = Image.open(fov_path)
-
-    label = label_func(Path(path))
-    orientation = os.path.basename(path).split("_")[-3]
-
-    width, height = pair.size
-
-    if orientation == "normal":
-        left1, top1, right1, bottom1 = width - width // 4, 0, width, height // 4
-        left2, top2, right2, bottom2 = 0, height - height // 4, width // 4, height
-    else:
-        left1, top1, right1, bottom1 = 0, 0, width // 4, height // 4
-        left2, top2, right2, bottom2 = (
-            width - width // 4,
-            height - height // 4,
-            width,
-            height,
-        )
-
-    im1 = pair.crop((left1, top1, right1, bottom1)).resize((224, 224))
-    im2 = pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
-    im3 = fov_pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
-
-    return (
-        ToTensor()(PILImage(im1)),
-        ToTensor()(PILImage(im2)),
-        ToTensor()(PILImage(im3)),
-        label,
-    )
-
-
-def make_dls_fov_same(stim_path, batch_sz=24, seed=0, test_prop=0.2):
-
-    stim_path = Path(stim_path)
-    pairs = glob.glob(os.path.join(stim_path, "*.png"))
-    fnames = sorted(Path(s) for s in pairs)
-    y = [label_func(item) for item in fnames]
-
-    splitter = TrainTestSplitter(test_size=test_prop,
-                                 random_state=42,
-                                 shuffle=True,
-                                 stratify=y)
-    splits = splitter(fnames)
-    # splits = RandomSplitter()(fnames)
-    siamese = DataBlock(
-        blocks=(ImageTupleBlock, CategoryBlock),
-        get_items=get_tuple_fov_same,
-        get_x=get_x,
-        get_y=get_y,
-        splitter=splitter,
-    )
-
-    dls = siamese.dataloaders(
-        fnames,
-        bs=batch_sz,
-        seed=seed,
-        shuffle=True,
-        device=defaults.device,
-    )
-
-    return dls
-
-
-def make_dls_fov_diff(stim_path, batch_sz=24, seed=0, test_prop=0.2):
-
-    stim_path = Path(stim_path)
-    pairs = glob.glob(os.path.join(stim_path, "*.png"))
-    fnames = sorted(Path(s) for s in pairs)
-    y = [label_func(item) for item in fnames]
-
-    splitter = TrainTestSplitter(test_size=test_prop,
-                                 random_state=42,
-                                 shuffle=True,
-                                 stratify=y)
-    splits = splitter(fnames)
-    # splits = RandomSplitter()(fnames)
-    siamese = DataBlock(
-        blocks=(ImageTupleBlock, CategoryBlock),
-        get_items=get_tuple_fov_diff,
-        get_x=get_x,
-        get_y=get_y,
-        splitter=splitter,
-    )
-
-    dls = siamese.dataloaders(
-        fnames,
-        bs=batch_sz,
-        seed=seed,
-        shuffle=True,
-        device=defaults.device,
-    )
-
-    return dls
 
 
 def test_nets_fov_decode(p):
