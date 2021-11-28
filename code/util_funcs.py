@@ -402,17 +402,27 @@ def test_net_fov_decode(net, p):
             X = net(inputs)
             y = labels
 
-    # skf = StratifiedKFold(n_splits=5)
+    X = x
+    y = y
 
-    # for train_index, test_index in skf.split(X, y):
-    #     print("TRAIN:", train_index, "TEST:", test_index)
-    #     X_train, X_test = X[train_index], X[test_index]
-    #     y_train, y_test = y[train_index], y[test_index]
+    clf = make_pipeline(StandardScaler(), SVC())
 
-    # clf = make_pipeline(StandardScaler(), SVC())
+    skf = StratifiedKFold(n_splits=5)
 
-    # clf = svm.SVC()
-    # clf.fit(X, y)
+    f = 0
+    for train_index, test_index in skf.split(X, y):
+        f += 1
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+        clf.fit(X_train, y_train)
+        acc = clf.score(X_test, y_test)
+        d = pd.DataFrame({
+            'fold': f,
+            'acc': acc
+        })
+        res.append(d)
+
+    res = pd.concat(res)
 
     return res
 
