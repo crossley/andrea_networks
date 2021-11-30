@@ -37,7 +37,7 @@ if __name__ == '__main__':
     weight_decay = 1e-3
     w_dropout_1 = 0.8
     w_dropout_2 = 0.8
-    
+
     data_loader = make_dls(stim_path, batch_sz, seed)
 
     net_0 = SiameseNet0(w_dropout_1, w_dropout_2)
@@ -48,21 +48,42 @@ if __name__ == '__main__':
 
     nets = [net_0, net_1, net_2, net_3, net_4]
 
+    nets = [x.to(defaults.device) for x in nets]
+    nets = [nn.DataParallel(x) for x in nets]
+
+    criterion = nn.CrossEntropyLoss()
+
+    # NOTE: training
     for net in nets:
-        print(net.model_name)
-        net.init_weights()
-        net.init_pretrained_weights()
-        net.freeze_pretrained_weights()
+        print(net.module.model_name)
+        net.module.init_weights()
+        net.module.init_pretrained_weights()
+        net.module.freeze_pretrained_weights()
         params_to_update = net.parameters()
         optimizer = optim.Adam(filter(lambda p: p.requires_grad,
                                       params_to_update),
                                lr=lr_min,
                                weight_decay=weight_decay)
-        criterion = nn.CrossEntropyLoss()
-        net.to(defaults.device)
-        net = nn.DataParallel(net)
         net.module.train_net(optimizer, criterion, data_loader, cycles, epochs)
-        torch.save(net.state_dict(), 'net_111' + net.module.model_name + '.pth')
+        torch.save(net.module.state_dict(),
+                   'net_111' + net.module.model_name + '.pth')
+
+    # NOTE: test sensitivity to fovea noise
+    noise_levels = np.linspace(0.0, 1.0, 2)
+    for net in nets:
+        print(net.module.model_name)
+        net.load_state_dict(
+            torch.load('net_111' + net.module.model_name + '.pth'))
+
+        for v in noise_vars:
+            X = []
+            y = []
+            fov_img = data_loader[1][0][2]
+            label = data_loader[1][1]
+            X.append(fov_img + v * torch.randn(fov_img.shape, device='cuda'))
+            y.append(label)
+
+            test_result = net.module.test_net(criterion, X, y)
 
     # res = test_nets_noise(p)
     # inspect_results_test(res)
