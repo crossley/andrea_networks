@@ -34,14 +34,17 @@ import collections
 import seaborn as sn
 import pandas as pd
 from matplotlib.ticker import FormatStrFormatter
+from sklearn import svm
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.model_selection import StratifiedKFold
+
 from SiameseNet import *
 from SiameseNet0 import *
 from SiameseNet1 import *
 from SiameseNet12 import *
 from SiameseNet2 import *
 from SiameseNet22 import *
-from sklearn import svm
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC
-from sklearn.model_selection import StratifiedKFold
+
+from util_train_nets import *

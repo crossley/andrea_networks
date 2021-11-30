@@ -28,9 +28,9 @@ if __name__ == '__main__':
     torch.manual_seed(seed)
 
     # stim_path = Path(r'D:\Andrea_NN\stimuli\no_transf')
-    # stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
-    stim_path = Path('../samediff_no-transf')
-    epochs = 100
+    stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
+    # stim_path = Path('../samediff_no-transf')
+    epochs = 10
     cycles = 1
     batch_sz = 24
     lr_min = 1e-4
@@ -38,10 +38,27 @@ if __name__ == '__main__':
     w_dropout_1 = 0.8
     w_dropout_2 = 0.8
 
-    p = (stim_path, epochs, cycles, batch_sz, lr_min, weight_decay,
-         w_dropout_1, w_dropout_2, seed)
+    net_0 = SiameseNet0(w_dropout_1, w_dropout_2)
+    net_1 = SiameseNet1(w_dropout_1, w_dropout_2)
+    net_2 = SiameseNet2(w_dropout_1, w_dropout_2)
+    net_3 = SiameseNet12(w_dropout_1, w_dropout_2)
+    net_4 = SiameseNet22(w_dropout_1, w_dropout_2)
 
-    # train_nets(p)
+    nets = [net_0, net_1, net_2, net_3, net_4]
+
+    for net in nets:
+        net.init_weights()
+        net.init_pretrained_weights()
+        net.freeze_pretrained_weights()
+        params_to_update = net.parameters()
+        optimizer = optim.Adam(filter(lambda p: p.requires_grad,
+                                      params_to_update),
+                               lr=lr_min,
+                               weight_decay=weight_decay)
+        criterion = nn.CrossEntropyLoss()
+        data_loader = make_dls(stim_path, batch_sz, seed)
+        net.train_net(optimizer, criterion, data_loader, cycles, epochs)
+        torch.save(net.state_dict(), '../trained_nets/net_' + net.module.model_name + '.pth')
 
     # res = test_nets_noise(p)
     # inspect_results_test(res)
