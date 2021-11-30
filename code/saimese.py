@@ -28,15 +28,17 @@ if __name__ == '__main__':
     torch.manual_seed(seed)
 
     # stim_path = Path(r'D:\Andrea_NN\stimuli\no_transf')
-    stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
-    # stim_path = Path('../samediff_no-transf')
-    epochs = 10
+    # stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
+    stim_path = Path('../samediff_no-transf')
+    epochs = 5
     cycles = 1
     batch_sz = 24
     lr_min = 1e-4
     weight_decay = 1e-3
     w_dropout_1 = 0.8
     w_dropout_2 = 0.8
+    
+    data_loader = make_dls(stim_path, batch_sz, seed)
 
     net_0 = SiameseNet0(w_dropout_1, w_dropout_2)
     net_1 = SiameseNet1(w_dropout_1, w_dropout_2)
@@ -56,9 +58,10 @@ if __name__ == '__main__':
                                lr=lr_min,
                                weight_decay=weight_decay)
         criterion = nn.CrossEntropyLoss()
-        data_loader = make_dls(stim_path, batch_sz, seed)
-        net.train_net(optimizer, criterion, data_loader, cycles, epochs)
-        torch.save(net.state_dict(), '../trained_nets/net_' + net.module.model_name + '.pth')
+        net.to(defaults.device)
+        net = nn.DataParallel(net)
+        net.module.train_net(optimizer, criterion, data_loader, cycles, epochs)
+        torch.save(net.state_dict(), 'net_111' + net.module.model_name + '.pth')
 
     # res = test_nets_noise(p)
     # inspect_results_test(res)
