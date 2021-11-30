@@ -65,25 +65,26 @@ if __name__ == '__main__':
                                lr=lr_min,
                                weight_decay=weight_decay)
         net.module.train_net(optimizer, criterion, data_loader, cycles, epochs)
-        torch.save(net.module.state_dict(),
+        torch.save(net.state_dict(),
                    'net_111' + net.module.model_name + '.pth')
 
     # NOTE: test sensitivity to fovea noise
     noise_levels = np.linspace(0.0, 1.0, 2)
+    test_loader = data_loader[1]
     for net in nets:
         print(net.module.model_name)
         net.load_state_dict(
             torch.load('net_111' + net.module.model_name + '.pth'))
 
-        for v in noise_vars:
-            X = []
-            y = []
-            fov_img = data_loader[1][0][2]
-            label = data_loader[1][1]
-            X.append(fov_img + v * torch.randn(fov_img.shape, device='cuda'))
-            y.append(label)
-
-            test_result = net.module.test_net(criterion, X, y)
+        for v in noise_levels:
+            for (inputs, labels) in test_loader:
+                X = []
+                y = []
+                fov_img = inputs[2]                
+                X.append(fov_img + v * torch.randn(fov_img.shape, device='cuda'))
+                y.append(labels)
+    
+                test_result = net.module.test_net(criterion, X, y)
 
     # res = test_nets_noise(p)
     # inspect_results_test(res)

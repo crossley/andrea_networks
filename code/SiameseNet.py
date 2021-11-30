@@ -176,6 +176,8 @@ class SiameseNet(nn.Module):
             for i in range(len(y)):
                 inputs = X[i]
                 labels = y[i]
+                print(inputs.shape)
+                print(labels)
                 out = net(inputs)
                 _, pred = torch.max(out, 1)
                 loss = criterion(out, labels)
