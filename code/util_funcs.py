@@ -8,17 +8,72 @@ Created on Sun Nov 21 10:02:00 2021
 from imports import *
 
 
-def label_func(path):
-    split_name = path.stem.split("_")
-    return 0 if split_name[-1] == split_name[-2] else 1
+def make_dls(stim_path,
+             get_img_tuple_func,
+             batch_sz=24,
+             seed=0,
+             test_prop=0.2):
+    stim_path = Path(stim_path)
+    pairs = glob.glob(os.path.join(stim_path, "*.png"))
+    fnames = sorted(Path(s) for s in pairs)
+    y = [label_func(item) for item in fnames]
+
+    splitter = TrainTestSplitter(test_size=test_prop,
+                                 random_state=seed,
+                                 shuffle=True,
+                                 stratify=y)
+
+    siamese = DataBlock(
+        blocks=(ImageTupleBlock, CategoryBlock),
+        get_items=lambda f: [[
+            get_img_tuple_func(x)[0],
+            get_img_tuple_func(x)[1],
+            get_img_tuple_func(x)[2],
+            get_img_tuple_func(x)[3],
+        ] for x in f],
+        get_x=get_x,
+        get_y=get_y,
+        splitter=splitter,
+    )
+
+    dls = siamese.dataloaders(
+        fnames,
+        bs=batch_sz,
+        seed=seed,
+        shuffle=True,
+        device=defaults.device,
+    )
+
+    return dls
 
 
-def get_x(t):
-    return t[:3]
+def get_tuples(files):
+    return [[
+        get_img_tuple_func(f)[0],
+        get_img_tuple_func(f)[1],
+        get_img_tuple_func(f)[2],
+        get_img_tuple_func(f)[3],
+    ] for f in files]
 
 
-def get_y(t):
-    return t[3]
+class add_fov_noise(Transform):
+    def __init__(self, noise_mean, noise_sd):
+        super(add_fov_noise, self).__init__()
+        self.noise_mean = noise_mean
+        self.noise_sd = noise_sd
+
+    def encodes(self, o):
+        v = 100
+        oo = []
+        for i in range(len(o)):
+            tmp = self.noise_mean + self.noise_sd * torch.randn(
+                o[i][0][2].size(), device=defaults.device)
+            tmp = TensorImage(tmp)
+            oo.append((o[i][0].add((0, 0, tmp)), o[i][1]))
+        return oo
+
+    def decodes(self, o):
+        return o
 
 
 class ImageTuple(fastuple):
@@ -32,12 +87,27 @@ class ImageTuple(fastuple):
                 or t1.shape != t2.shape):
             return ctx
         line = t1.new_zeros(t1.shape[0], t1.shape[1], 10)
-        return show_image(torch.cat([t1, line, t2], dim=2), ctx=ctx, **kwargs)
+        return show_image(torch.cat([t1, line, t2, line, t3], dim=2),
+                          ctx=ctx,
+                          **kwargs)
 
 
 def ImageTupleBlock():
     return TransformBlock(type_tfms=ImageTuple.create,
                           batch_tfms=IntToFloatTensor)
+
+
+def label_func(path):
+    split_name = path.stem.split("_")
+    return 0 if split_name[-1] == split_name[-2] else 1
+
+
+def get_x(t):
+    return t[:3]
+
+
+def get_y(t):
+    return t[3]
 
 
 def make_dls_abstract(root, batch_sz=24, seed=0, test_prop=0.2):
@@ -271,33 +341,6 @@ def make_dls_abstract_fov_same(root, batch_sz=24, seed=0, test_prop=0.2):
     return dls
 
 
-def get_tuples_abstract(files):
-    return [[
-        get_img_tuple_abstract(f)[0],
-        get_img_tuple_abstract(f)[1],
-        get_img_tuple_abstract(f)[2],
-        get_img_tuple_abstract(f)[3],
-    ] for f in files]
-
-
-def get_tuples_abstract_fov_diff(files):
-    return [[
-        get_img_tuple_abstract_fov_diff(f)[0],
-        get_img_tuple_abstract_fov_diff(f)[1],
-        get_img_tuple_abstract_fov_diff(f)[2],
-        get_img_tuple_abstract_fov_diff(f)[3],
-    ] for f in files]
-
-
-def get_tuples_abstract_fov_same(files):
-    return [[
-        get_img_tuple_abstract_fov_same(f)[0],
-        get_img_tuple_abstract_fov_same(f)[1],
-        get_img_tuple_abstract_fov_same(f)[2],
-        get_img_tuple_abstract_fov_same(f)[3],
-    ] for f in files]
-
-
 def get_img_tuple_abstract(path):
     img1 = Image.open(path[0])
     img2 = Image.open(path[1])
@@ -382,52 +425,7 @@ def get_img_tuple_abstract_fov_same(path):
     )
 
 
-def get_tuples_no_noise(files):
-    return [[
-        get_img_tuple_no_noise(f)[0],
-        get_img_tuple_no_noise(f)[1],
-        get_img_tuple_no_noise(f)[2],
-        get_img_tuple_no_noise(f)[3],
-    ] for f in files]
-
-
-def get_tuples_noise(files):
-    return [[
-        get_img_tuple_noise(f)[0],
-        get_img_tuple_noise(f)[1],
-        get_img_tuple_noise(f)[2],
-        get_img_tuple_noise(f)[3],
-    ] for f in files]
-
-
-def get_tuples_fov_same(files):
-    return [[
-        get_img_tuple_fov_same(f)[0],
-        get_img_tuple_fov_same(f)[1],
-        get_img_tuple_fov_same(f)[2],
-        get_img_tuple_fov_same(f)[3],
-    ] for f in files]
-
-
-def get_tuples_fov_diff(files):
-    return [[
-        get_img_tuple_fov_diff(f)[0],
-        get_img_tuple_fov_diff(f)[1],
-        get_img_tuple_fov_diff(f)[2],
-        get_img_tuple_fov_diff(f)[3],
-    ] for f in files]
-
-
-def get_tuples_fov_diff_fv(files):
-    return [[
-        get_img_tuple_fov_diff_fv(f)[0],
-        get_img_tuple_fov_diff_fv(f)[1],
-        get_img_tuple_fov_diff_fv(f)[2],
-        get_img_tuple_fov_diff_fv(f)[3],
-    ] for f in files]
-
-
-def get_img_tuple_no_noise(path):
+def get_img_tuple_fov_empty(path):
     pair = Image.open(path)
 
     label = label_func(Path(path))
@@ -450,43 +448,6 @@ def get_img_tuple_no_noise(path):
     im1 = pair.crop((left1, top1, right1, bottom1)).resize((224, 224))
     im2 = pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
     im3 = Image.new("RGB", (224, 224), (125, 125, 125))
-
-    return (
-        ToTensor()(PILImage(im1)),
-        ToTensor()(PILImage(im2)),
-        ToTensor()(PILImage(im3)),
-        label,
-    )
-
-
-def get_img_tuple_noise(path):
-
-    pair = Image.open(path)
-
-    label = label_func(Path(path))
-    orientation = os.path.basename(path).split("_")[-3]
-
-    width, height = pair.size
-
-    if orientation == "normal":
-        left1, top1, right1, bottom1 = width - width // 4, 0, width, height // 4
-        left2, top2, right2, bottom2 = 0, height - height // 4, width // 4, height
-    else:
-        left1, top1, right1, bottom1 = 0, 0, width // 4, height // 4
-        left2, top2, right2, bottom2 = (
-            width - width // 4,
-            height - height // 4,
-            width,
-            height,
-        )
-
-    im1 = pair.crop((left1, top1, right1, bottom1)).resize((224, 224))
-    im2 = pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
-    im3 = Image.new("RGB", (224, 224), (125, 125, 125))
-    im3 = Image.fromarray(
-        np.uint8(
-            skimage.util.random_noise(
-                skimage.img_as_float(im3), mode="s&p", amount=1) * 255))
 
     return (
         ToTensor()(PILImage(im1)),
@@ -639,52 +600,52 @@ def get_img_tuple_fov_diff_fv(path):
     )
 
 
-def make_dls(stim_path, batch_sz=24, seed=0, test_prop=0.2):
+# def make_dls(stim_path, batch_sz=24, seed=0, test_prop=0.2):
 
-    stim_path = Path(stim_path)
-    pairs = glob.glob(os.path.join(stim_path, "*.png"))
-    fnames = sorted(Path(s) for s in pairs)
-    y = [label_func(item) for item in fnames]
+#     stim_path = Path(stim_path)
+#     pairs = glob.glob(os.path.join(stim_path, "*.png"))
+#     fnames = sorted(Path(s) for s in pairs)
+#     y = [label_func(item) for item in fnames]
 
-    splitter = TrainTestSplitter(test_size=test_prop,
-                                 random_state=42,
-                                 shuffle=True,
-                                 stratify=y)
-    splits = splitter(fnames)
-    siamese = DataBlock(
-        blocks=(ImageTupleBlock, CategoryBlock),
-        get_items=get_tuples_no_noise,
-        get_x=get_x,
-        get_y=get_y,
-        splitter=splitter,
-    )
+#     splitter = TrainTestSplitter(test_size=test_prop,
+#                                  random_state=42,
+#                                  shuffle=True,
+#                                  stratify=y)
+#     splits = splitter(fnames)
+#     siamese = DataBlock(
+#         blocks=(ImageTupleBlock, CategoryBlock),
+#         get_items=get_tuples_fov_empty,
+#         get_x=get_x,
+#         get_y=get_y,
+#         splitter=splitter,
+#     )
 
-    dls = siamese.dataloaders(
-        fnames,
-        bs=batch_sz,
-        seed=seed,
-        shuffle=True,
-        device=defaults.device,
-    )
+#     dls = siamese.dataloaders(
+#         fnames,
+#         bs=batch_sz,
+#         seed=seed,
+#         shuffle=True,
+#         device=defaults.device,
+#     )
 
-    # check that train and test splits have balanced classes
-    # train_test = ["TRAIN", "TEST"]
-    # for train_test_id in [0, 1]:
-    #     s = 0
-    #     d = 0
-    #     for item in dls.__getitem__(train_test_id).items:
-    #         # print(label_from_path(item))
-    #         # print(item)
-    #         # print('---')
-    #         if item[3] == 1:
-    #             s += 1
-    #         else:
-    #             d += 1
-    #     print(
-    #         f"{train_test[train_test_id]} SET (same, diff): {str(s)}, {str(d)}"
-    #     )
+#     # check that train and test splits have balanced classes
+#     train_test = ["TRAIN", "TEST"]
+#     for train_test_id in [0, 1]:
+#         s = 0
+#         d = 0
+#         for item in dls.__getitem__(train_test_id).items:
+#             # print(label_from_path(item))
+#             # print(item)
+#             # print('---')
+#             if item[3] == 1:
+#                 s += 1
+#             else:
+#                 d += 1
+#         print(
+#             f"{train_test[train_test_id]} SET (same, diff): {str(s)}, {str(d)}"
+#         )
 
-    return dls
+#     return dls
 
 
 def make_dls_fov_same(stim_path, batch_sz=24, seed=0, test_prop=0.2):
@@ -698,7 +659,7 @@ def make_dls_fov_same(stim_path, batch_sz=24, seed=0, test_prop=0.2):
                                  random_state=42,
                                  shuffle=True,
                                  stratify=y)
-    splits = splitter(fnames)
+
     siamese = DataBlock(
         blocks=(ImageTupleBlock, CategoryBlock),
         get_items=get_tuples_fov_same,
@@ -729,7 +690,7 @@ def make_dls_fov_diff(stim_path, batch_sz=24, seed=0, test_prop=0.2):
                                  random_state=42,
                                  shuffle=True,
                                  stratify=y)
-    splits = splitter(fnames)
+
     siamese = DataBlock(
         blocks=(ImageTupleBlock, CategoryBlock),
         get_items=get_tuples_fov_diff,

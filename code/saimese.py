@@ -5,11 +5,6 @@ Created on Sat Nov 20 16:08:56 2021
 @author: mq20185996
 """
 
-# TODO:
-# Try different feedback architectures
-# - fully interconnected vs conv
-# Deep net to fMRI mapping
-
 from imports import *
 from util_funcs import *
 
@@ -37,8 +32,7 @@ if __name__ == '__main__':
     weight_decay = 1e-3
     w_dropout_1 = 0.8
     w_dropout_2 = 0.8
-
-    data_loader = make_dls(stim_path, batch_sz, seed)
+    test_prop = 0.2
 
     net_0 = SiameseNet0(w_dropout_1, w_dropout_2)
     net_1 = SiameseNet1(w_dropout_1, w_dropout_2)
@@ -54,47 +48,107 @@ if __name__ == '__main__':
     criterion = nn.CrossEntropyLoss()
 
     # NOTE: training
-    for net in nets:
-        print(net.module.model_name)
-        net.module.init_weights()
-        net.module.init_pretrained_weights()
-        net.module.freeze_pretrained_weights()
-        params_to_update = net.parameters()
-        optimizer = optim.Adam(filter(lambda p: p.requires_grad,
-                                      params_to_update),
-                               lr=lr_min,
-                               weight_decay=weight_decay)
-        net.module.train_net(optimizer, criterion, data_loader, cycles, epochs)
-        torch.save(net.state_dict(),
-                   'net_111' + net.module.model_name + '.pth')
+    # dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
+    # for net in nets:
+    #     print(net.module.model_name)
+    #     net.module.init_weights()
+    #     net.module.init_pretrained_weights()
+    #     net.module.freeze_pretrained_weights()
+    #     params_to_update = net.parameters()
+    #     optimizer = optim.Adam(filter(lambda p: p.requires_grad,
+    #                                   params_to_update),
+    #                            lr=lr_min,
+    #                            weight_decay=weight_decay)
+    #     net.module.train_net(optimizer, criterion, dls, cycles, epochs)
+    #     torch.save(net.state_dict(),
+    #                'net_111' + net.module.model_name + '.pth')
 
     # NOTE: test sensitivity to fovea noise
-    noise_levels = np.linspace(0.0, 1.0, 2)
-    test_loader = data_loader[1]
+    # noise_sd = np.linspace(0.0, 100.0, 2)
+    # print(noise_sd)
+    # for v in noise_sd:
+    #     dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
+    #     dls.add_tfms([add_fov_noise(0, v)], 'before_batch', 'valid')
+    #     # dls.valid.show_batch()
+    #     # plt.show()
+    #     # plt.close('all')
+
+    #     for net in nets:
+    #         print(net.module.model_name)
+    #         net.load_state_dict(
+    #             torch.load('net_111' + net.module.model_name + '.pth',
+    #                        map_location=torch.device('cpu')))
+
+    #         res = net.module.test_net(criterion, dls[1])
+
+    # NOTE: test sensitivity to fovea images (same vs diff)
+    # dls_same = make_dls(stim_path, get_img_tuple_fov_same, batch_sz, seed)
+    # dls_diff = make_dls(stim_path, get_img_tuple_fov_diff, batch_sz, seed)
+    # for net in nets:
+    #     print(net.module.model_name)
+    #     net.load_state_dict(
+    #         torch.load('net_111' + net.module.model_name + '.pth',
+    #                    map_location=torch.device('cpu')))
+
+    #     res_same = net.module.test_net(criterion, dls_same[1])
+    #     res_diff = net.module.test_net(criterion, dls_diff[1])
+
+    # NOTE: test ability to decode from periphery and fovea areas
+    dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
     for net in nets:
+        net = nets[1]
         print(net.module.model_name)
         net.load_state_dict(
-            torch.load('net_111' + net.module.model_name + '.pth'))
+            torch.load('net_111' + net.module.model_name + '.pth',
+                       map_location=torch.device('cpu')))
 
-        for v in noise_levels:
-            for (inputs, labels) in test_loader:
-                X = []
-                y = []
-                fov_img = inputs[2]                
-                X.append(fov_img + v * torch.randn(fov_img.shape, device='cuda'))
-                y.append(labels)
-    
-                test_result = net.module.test_net(criterion, X, y)
+        # TODO: Here, we need to assess if image category can be decoded via
+        # something like MVPA from fov V1. We first need to extract X and y and
+        # then pipe into a standard sklearn svm pipeline.
+        X = []
+        y = []
+        res = []
 
-    # res = test_nets_noise(p)
-    # inspect_results_test(res)
+        # TODO: Does it make sense to revise the def of model 0 to include FB?
+        net.module.fb.register_forward_hook(lambda m, input, output: print(output))
 
-    # res = test_nets_fovimg(p)
-    # res = pd.concat(res)
-    # print(res)
-    # TODO: need to implement this
-    # inspect_results_test_fovimg(res)
+        net.eval()
+        with torch.no_grad():
+            for (inputs, labels) in dls[0]:
 
-    # res = test_nets_fov_decode(p)
-    # TODO: need to implement this
-    # inspect_results_test_fov_decode(res)
+                # TODO: get activation in v1 ROIs
+                # TODO: With the hook above, I believe this will only print.
+                # TODO: Revise from here...
+                X = net(inputs)
+                y = labels
+
+        # X = x
+        # y = y
+
+        # clf = make_pipeline(StandardScaler(), SVC())
+
+        # skf = StratifiedKFold(n_splits=5)
+
+        # f = 0
+        # for train_index, test_index in skf.split(X, y):
+        #     f += 1
+        #     X_train, X_test = X[train_index], X[test_index]
+        #     y_train, y_test = y[train_index], y[test_index]
+        #     clf.fit(X_train, y_train)
+        #     acc = clf.score(X_test, y_test)
+        #     d = pd.DataFrame({'fold': f, 'acc': acc})
+        #     res.append(d)
+
+        # res = pd.concat(res)
+
+# get_img_tuple_fov_empty
+# get_img_tuple_fov_same
+# get_img_tuple_fov_diff
+# get_img_tuple_abstract
+# get_img_tuple_abstract_fov_diff
+# get_img_tuple_abstract_fov_same
+
+# TODO:
+# Try different feedback architectures
+# - fully interconnected vs conv
+# Deep net to fMRI mapping

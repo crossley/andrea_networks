@@ -160,7 +160,7 @@ class SiameseNet(nn.Module):
 
         return (tr_loss, tr_acc, te_loss, te_acc, cf_pred, cf_y)
 
-    def test_net(self, criterion, X, y):
+    def test_net(self, criterion, test_loader):
 
         net = self
         net.eval()
@@ -173,11 +173,7 @@ class SiameseNet(nn.Module):
         cf_pred = []
         cf_y = []
         with torch.no_grad():
-            for i in range(len(y)):
-                inputs = X[i]
-                labels = y[i]
-                print(inputs.shape)
-                print(labels)
+            for (inputs, labels) in test_loader:
                 out = net(inputs)
                 _, pred = torch.max(out, 1)
                 loss = criterion(out, labels)
