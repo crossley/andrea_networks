@@ -110,7 +110,17 @@ if __name__ == '__main__':
         res = []
 
         # TODO: Does it make sense to revise the def of model 0 to include FB?
-        net.module.fb.register_forward_hook(lambda m, input, output: print(output))
+        class save_output:
+            def __init__(self):
+                self.outputs = []
+
+            def __call__(self, module, module_in, module_out):
+                self.outputs.append(module_out)
+
+            def clear(self):
+                self.outputs = []
+
+        handle = net.module.fb.register_forward_hook(save_output)
 
         net.eval()
         with torch.no_grad():
@@ -119,9 +129,14 @@ if __name__ == '__main__':
                 # TODO: get activation in v1 ROIs
                 # TODO: With the hook above, I believe this will only print.
                 # TODO: Revise from here...
-                X = net(inputs)
-                y = labels
+                out = net(inputs)
+                X.append(save_output.outputs)
+                y.append(labels)
 
+        print(len(X), len(y))
+        print(X)
+        print(y)
+        print()
         # X = x
         # y = y
 
