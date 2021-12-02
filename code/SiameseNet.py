@@ -173,6 +173,7 @@ class SiameseNet(nn.Module):
         cf_pred = []
         cf_y = []
         with torch.no_grad():
+            start = time.time()
             for (inputs, labels) in test_loader:
                 out = net(inputs)
                 _, pred = torch.max(out, 1)

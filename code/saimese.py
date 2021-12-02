@@ -59,13 +59,13 @@ if __name__ == '__main__':
     #                                   params_to_update),
     #                             lr=lr_min,
     #                             weight_decay=weight_decay)
-    #     net.module.train_net(optimizer, criterion, dls, cycles, epochs)
+    #     res = net.module.train_net(optimizer, criterion, dls, cycles, epochs)
     #     torch.save(net.state_dict(),
     #                 'net_111' + net.module.model_name + '.pth')
 
     # NOTE: test sensitivity to fovea noise
+    # d = []
     # noise_sd = np.linspace(0.0, 100.0, 2)
-    # print(noise_sd)
     # for v in noise_sd:
     #     dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
     #     dls.add_tfms([add_fov_noise(0, v)], 'before_batch', 'valid')
@@ -78,10 +78,19 @@ if __name__ == '__main__':
     #         net.load_state_dict(
     #             torch.load('net_111' + net.module.model_name + '.pth',
     #                        map_location=torch.device('cpu')))
-
     #         res = net.module.test_net(criterion, dls[1])
+    #         (te_loss, te_acc, cf_pred, cf_y) = res
+    #         d.append(
+    #             pd.DataFrame({
+    #                 'noise_sd': v,
+    #                 'net': net.module.model_name,
+    #                 'te_acc': te_acc
+    #             }))
+    # d = pd.concat(d)
 
     # NOTE: test sensitivity to fovea images (same vs diff)
+    # d_same = []
+    # d_diff = []
     # dls_same = make_dls(stim_path, get_img_tuple_fov_same, batch_sz, seed)
     # dls_diff = make_dls(stim_path, get_img_tuple_fov_diff, batch_sz, seed)
     # for net in nets:
@@ -92,6 +101,23 @@ if __name__ == '__main__':
 
     #     res_same = net.module.test_net(criterion, dls_same[1])
     #     res_diff = net.module.test_net(criterion, dls_diff[1])
+    #     d_same.append(
+    #         pd.DataFrame({
+    #             'condition': 'same',
+    #             'net': net.module.model_name,
+    #             'te_acc': res_same[1]
+    #         }))
+    #     d_diff.append(
+    #         pd.DataFrame({
+    #             'condition': 'diff',
+    #             'net': net.module.model_name,
+    #             'te_acc': res_diff[1]
+    #         }))
+
+    # d_same = pd.concat(d_same)
+    # d_diff = pd.concat(d_diff)
+    # d = [d_same, d_diff]
+    # d = pd.concat(d)
 
     # NOTE: test ability to decode from periphery and fovea areas
     # dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
@@ -157,5 +183,5 @@ if __name__ == '__main__':
 
 # TODO:
 # Try different feedback architectures
-# - fully interconnected vs conv
+# - E.g., fully interconnected vs conv
 # Deep net to fMRI mapping
