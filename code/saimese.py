@@ -94,49 +94,59 @@ if __name__ == '__main__':
     #     res_diff = net.module.test_net(criterion, dls_diff[1])
 
     # NOTE: test ability to decode from periphery and fovea areas
-    dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
-    for net in nets:
-        net = nets[1]
-        print(net.module.model_name)
-        net.load_state_dict(
-            torch.load('net_111' + net.module.model_name + '.pth',
-                       map_location=torch.device(defaults.device)))
+    # dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
+    # for net in nets:
+    #     net = nets[1]
+    #     print(net.module.model_name)
+    #     # net.load_state_dict(
+    #     #     torch.load('net_111' + net.module.model_name + '.pth',
+    #     #                map_location=torch.device(defaults.device)))
+    #     net.load_state_dict(
+    #         torch.load('net_111' + net.module.model_name + '.pth',
+    #                    map_location='cpu'))
+    #     net = net.module.to('cpu')
 
-        X = []
-        y = []
-        res = []
-            
-        activation = {}
-        def get_activation(name):
-            def hook(model, input, output):
-                activation[name] = output.detach()
-            return hook
-            
-        handle = net.module.fb[0].register_forward_hook(get_activation('fb'))
-        
-        net.eval()
-        with torch.no_grad():
-            for (inputs, labels) in dls[0]:
-                out = net(inputs)
+    #     activation = {}
 
-        # X = x
-        # y = y
+    #     def get_activation(name):
+    #         def hook(model, input, output):
+    #             activation[name] = output.detach()
 
-        # clf = make_pipeline(StandardScaler(), SVC())
+    #         return hook
 
-        # skf = StratifiedKFold(n_splits=5)
+    #     handle = net.fb[0].register_forward_hook(get_activation('fb'))
 
-        # f = 0
-        # for train_index, test_index in skf.split(X, y):
-        #     f += 1
-        #     X_train, X_test = X[train_index], X[test_index]
-        #     y_train, y_test = y[train_index], y[test_index]
-        #     clf.fit(X_train, y_train)
-        #     acc = clf.score(X_test, y_test)
-        #     d = pd.DataFrame({'fold': f, 'acc': acc})
-        #     res.append(d)
+    #     X = []
+    #     y = []
 
-        # res = pd.concat(res)
+    #     net.eval()
+    #     with torch.no_grad():
+    #         for (inputs, labels) in dls[0]:
+    #             out = net(inputs)
+    #             X.append(activation['fb'].numpy())
+    #             y.append(labels.numpy())
+
+    #     X = np.vstack(X)
+    #     X = X.reshape(X.shape[0], -1)
+    #     y = np.hstack(y)
+
+    #     # pipe = make_pipeline(StandardScaler(), SVC())
+    #     pipe = Pipeline([('scaler', StandardScaler()), ('svc', SVC())])
+
+    #     skf = StratifiedKFold(n_splits=5)
+
+    #     res = []
+    #     f = 0
+    #     for train_index, test_index in skf.split(X, y):
+    #         f += 1
+    #         X_train, X_test = X[train_index, :], X[test_index, :]
+    #         y_train, y_test = y[train_index], y[test_index]
+    #         pipe.fit(X_train, y_train)
+    #         acc = pipe.score(X_test, y_test)
+    #         d = pd.DataFrame({'fold': f, 'acc': acc}, index=[f])
+    #         res.append(d)
+
+    #     res = pd.concat(res)
 
 # get_img_tuple_fov_empty
 # get_img_tuple_fov_same

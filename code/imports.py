@@ -36,6 +36,7 @@ import pandas as pd
 from matplotlib.ticker import FormatStrFormatter
 from sklearn import svm
 from sklearn.pipeline import make_pipeline
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.model_selection import StratifiedKFold
@@ -48,6 +49,3 @@ from SiameseNet2 import *
 from SiameseNet22 import *
 
 from util_train_nets import *
-
-import threading
-from collections import defaultdict

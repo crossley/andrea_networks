@@ -12,7 +12,8 @@ def make_dls(stim_path,
              get_img_tuple_func,
              batch_sz=24,
              seed=0,
-             test_prop=0.2):
+             test_prop=0.2
+             ):
     stim_path = Path(stim_path)
     pairs = glob.glob(os.path.join(stim_path, "*.png"))
     fnames = sorted(Path(s) for s in pairs)
@@ -41,7 +42,8 @@ def make_dls(stim_path,
         bs=batch_sz,
         seed=seed,
         shuffle=True,
-        device=defaults.device,
+        num_workers=0,
+        device=torch.device('cpu'),
     )
 
     return dls
