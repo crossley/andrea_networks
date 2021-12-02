@@ -57,11 +57,11 @@ if __name__ == '__main__':
     #     params_to_update = net.parameters()
     #     optimizer = optim.Adam(filter(lambda p: p.requires_grad,
     #                                   params_to_update),
-    #                            lr=lr_min,
-    #                            weight_decay=weight_decay)
+    #                             lr=lr_min,
+    #                             weight_decay=weight_decay)
     #     net.module.train_net(optimizer, criterion, dls, cycles, epochs)
     #     torch.save(net.state_dict(),
-    #                'net_111' + net.module.model_name + '.pth')
+    #                 'net_111' + net.module.model_name + '.pth')
 
     # NOTE: test sensitivity to fovea noise
     # noise_sd = np.linspace(0.0, 100.0, 2)
@@ -100,43 +100,25 @@ if __name__ == '__main__':
         print(net.module.model_name)
         net.load_state_dict(
             torch.load('net_111' + net.module.model_name + '.pth',
-                       map_location=torch.device('cpu')))
+                       map_location=torch.device(defaults.device)))
 
-        # TODO: Here, we need to assess if image category can be decoded via
-        # something like MVPA from fov V1. We first need to extract X and y and
-        # then pipe into a standard sklearn svm pipeline.
         X = []
         y = []
         res = []
-
-        # TODO: Does it make sense to revise the def of model 0 to include FB?
-        class save_output:
-            def __init__(self):
-                self.outputs = []
-
-            def __call__(self, module, module_in, module_out):
-                self.outputs.append(module_out)
-
-            def clear(self):
-                self.outputs = []
-
-        handle = net.module.fb.register_forward_hook(save_output)
-
+            
+        activation = {}
+        def get_activation(name):
+            def hook(model, input, output):
+                activation[name] = output.detach()
+            return hook
+            
+        handle = net.module.fb[0].register_forward_hook(get_activation('fb'))
+        
         net.eval()
         with torch.no_grad():
             for (inputs, labels) in dls[0]:
-
-                # TODO: get activation in v1 ROIs
-                # TODO: With the hook above, I believe this will only print.
-                # TODO: Revise from here...
                 out = net(inputs)
-                X.append(save_output.outputs)
-                y.append(labels)
 
-        print(len(X), len(y))
-        print(X)
-        print(y)
-        print()
         # X = x
         # y = y
 
