@@ -43,7 +43,7 @@ def make_dls(stim_path,
         seed=seed,
         shuffle=True,
         num_workers=0,
-        device=torch.device('cpu'),
+        device=torch.device('cuda'),
     )
 
     return dls

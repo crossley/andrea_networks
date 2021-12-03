@@ -23,9 +23,9 @@ if __name__ == '__main__':
     torch.manual_seed(seed)
 
     # stim_path = Path(r'D:\Andrea_NN\stimuli\no_transf')
-    # stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
-    stim_path = Path('../samediff_no-transf')
-    epochs = 2
+    stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
+    # stim_path = Path('../samediff_no-transf')
+    epochs = 25
     cycles = 1
     batch_sz = 24
     lr_min = 1e-4
@@ -48,20 +48,20 @@ if __name__ == '__main__':
     criterion = nn.CrossEntropyLoss()
 
     # NOTE: training
-    # dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
-    # for net in nets:
-    #     print(net.module.model_name)
-    #     net.module.init_weights()
-    #     net.module.init_pretrained_weights()
-    #     net.module.freeze_pretrained_weights()
-    #     params_to_update = net.parameters()
-    #     optimizer = optim.Adam(filter(lambda p: p.requires_grad,
-    #                                   params_to_update),
-    #                             lr=lr_min,
-    #                             weight_decay=weight_decay)
-    #     res = net.module.train_net(optimizer, criterion, dls, cycles, epochs)
-    #     torch.save(net.state_dict(),
-    #                 'net_111' + net.module.model_name + '.pth')
+    dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
+    for net in nets:
+        print(net.module.model_name)
+        net.module.init_weights()
+        net.module.init_pretrained_weights()
+        net.module.freeze_pretrained_weights()
+        params_to_update = net.parameters()
+        optimizer = optim.Adam(filter(lambda p: p.requires_grad,
+                                      params_to_update),
+                                lr=lr_min,
+                                weight_decay=weight_decay)
+        res = net.module.train_net(optimizer, criterion, dls, cycles, epochs)
+        torch.save(net.state_dict(),
+                    'net_111' + net.module.model_name + '.pth')
 
     # NOTE: test sensitivity to fovea noise
     # d = []
