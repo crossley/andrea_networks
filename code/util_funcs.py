@@ -12,8 +12,7 @@ def make_dls(stim_path,
              get_img_tuple_func,
              batch_sz=24,
              seed=0,
-             test_prop=0.2
-             ):
+             test_prop=0.2):
     stim_path = Path(stim_path)
     pairs = glob.glob(os.path.join(stim_path, "*.png"))
     fnames = sorted(Path(s) for s in pairs)
@@ -111,237 +110,6 @@ def get_x(t):
 
 def get_y(t):
     return t[3]
-
-
-def make_dls_abstract(root, batch_sz=24, seed=0, test_prop=0.2):
-
-    root = Path(root)
-    cats = ['Cubies', 'Smoothies', 'Spikies']
-
-    dirs = [os.path.join(root, cat) for cat in cats]
-    stims = {
-        os.path.split(dir_)[1]: glob.glob(os.path.join(dir_, "*.jpg"))
-        for dir_ in dirs
-    }
-    n_stims = len(stims[cats[1]])
-
-    fnames1 = [stims[cat][i] for cat in stims for i in range(n_stims)] * 2
-
-    def shuffle_list(list_):
-        idxs1 = list(range(len(list_)))
-        idxs2 = list(range(len(list_)))
-        while sum([idxs1[i] == idxs2[i] for i in range(len(idxs1))]) > 0:
-            random.shuffle(idxs1)
-        return idxs1
-
-    fnames2 = [stims[cat][i] for cat in stims for i in range(n_stims)] + [
-        stims[cat][i] for cat in stims for i in shuffle_list(stims[cat])
-    ]
-    y = [fnames1[i] == fnames2[i] for i in range(len(fnames1))]
-
-    print(f'SAME: {sum(y)}\nDIFF: {len(y)-sum(y)}')
-
-    def calc_dist(pair):
-        dist = 0
-        file1 = os.path.basename(pair[0]).split('_')[1][:4]
-        file2 = os.path.basename(pair[1]).split('_')[1][:4]
-        for i in range(4):
-            dist += abs(int(file1[i]) - int(file2[i]))
-        return dist
-
-    fnames = [[fnames1[i], fnames2[i]] for i in range(len(fnames1))
-              if calc_dist(pair) > 5]
-
-    # TODO: need to pass fnames1 and fnames2 to make images
-    splitter = TrainTestSplitter(test_size=test_prop,
-                                 random_state=42,
-                                 shuffle=True,
-                                 stratify=y)
-
-    splits = splitter(fnames)
-
-    siamese = DataBlock(
-        blocks=(ImageTupleBlock, CategoryBlock),
-        get_items=get_tuples_abstract,
-        get_x=get_x,
-        get_y=get_y,
-        splitter=splitter,
-    )
-
-    dls = siamese.dataloaders(
-        fnames,
-        bs=batch_sz,
-        seed=seed,
-        shuffle=True,
-        device=defaults.device,
-    )
-
-    # check that train and test splits have balanced classes
-    train_test = ["TRAIN", "TEST"]
-    for train_test_id in [0, 1]:
-        s = 0
-        d = 0
-        for item in dls.__getitem__(train_test_id).items:
-            # print(label_from_path(item))
-            # print(item)
-            # print('---')
-            if item[3] == 1:
-                s += 1
-            else:
-                d += 1
-        print(
-            f"{train_test[train_test_id]} SET (same, diff): {str(s)}, {str(d)}"
-        )
-
-    return dls
-
-
-def make_dls_abstract_fov_diff(root, batch_sz=24, seed=0, test_prop=0.2):
-
-    root = Path(root)
-    cats = ['Cubies', 'Smoothies', 'Spikies']
-
-    dirs = [os.path.join(root, cat) for cat in cats]
-    stims = {
-        os.path.split(dir_)[1]: glob.glob(os.path.join(dir_, "*.jpg"))
-        for dir_ in dirs
-    }
-    n_stims = len(stims[cats[1]])
-
-    fnames1 = [stims[cat][i] for cat in stims for i in range(n_stims)] * 2
-
-    def shuffle_list(list_):
-        idxs1 = list(range(len(list_)))
-        idxs2 = list(range(len(list_)))
-        while sum([idxs1[i] == idxs2[i] for i in range(len(idxs1))]) > 0:
-            random.shuffle(idxs1)
-        return idxs1
-
-    fnames2 = [stims[cat][i] for cat in stims for i in range(n_stims)] + [
-        stims[cat][i] for cat in stims for i in shuffle_list(stims[cat])
-    ]
-    y = [fnames1[i] == fnames2[i] for i in range(len(fnames1))]
-
-    print(f'SAME: {sum(y)}\nDIFF: {len(y)-sum(y)}')
-
-    fnames = [[fnames1[i], fnames2[i]] for i in range(len(fnames1))]
-
-    # TODO: need to pass fnames1 and fnames2 to make images
-    splitter = TrainTestSplitter(test_size=test_prop,
-                                 random_state=42,
-                                 shuffle=True,
-                                 stratify=y)
-
-    splits = splitter(fnames)
-
-    siamese = DataBlock(
-        blocks=(ImageTupleBlock, CategoryBlock),
-        get_items=get_tuples_abstract_fov_diff,
-        get_x=get_x,
-        get_y=get_y,
-        splitter=splitter,
-    )
-
-    dls = siamese.dataloaders(
-        fnames,
-        bs=batch_sz,
-        seed=seed,
-        shuffle=True,
-        device=defaults.device,
-    )
-
-    # check that train and test splits have balanced classes
-    train_test = ["TRAIN", "TEST"]
-    for train_test_id in [0, 1]:
-        s = 0
-        d = 0
-        for item in dls.__getitem__(train_test_id).items:
-            # print(label_from_path(item))
-            # print(item)
-            # print('---')
-            if item[3] == 1:
-                s += 1
-            else:
-                d += 1
-        print(
-            f"{train_test[train_test_id]} SET (same, diff): {str(s)}, {str(d)}"
-        )
-
-    return dls
-
-
-def make_dls_abstract_fov_same(root, batch_sz=24, seed=0, test_prop=0.2):
-
-    root = Path(root)
-    cats = ['Cubies', 'Smoothies', 'Spikies']
-
-    dirs = [os.path.join(root, cat) for cat in cats]
-    stims = {
-        os.path.split(dir_)[1]: glob.glob(os.path.join(dir_, "*.jpg"))
-        for dir_ in dirs
-    }
-    n_stims = len(stims[cats[1]])
-
-    fnames1 = [stims[cat][i] for cat in stims for i in range(n_stims)] * 2
-
-    def shuffle_list(list_):
-        idxs1 = list(range(len(list_)))
-        idxs2 = list(range(len(list_)))
-        while sum([idxs1[i] == idxs2[i] for i in range(len(idxs1))]) > 0:
-            random.shuffle(idxs1)
-        return idxs1
-
-    fnames2 = [stims[cat][i] for cat in stims for i in range(n_stims)] + [
-        stims[cat][i] for cat in stims for i in shuffle_list(stims[cat])
-    ]
-    y = [fnames1[i] == fnames2[i] for i in range(len(fnames1))]
-
-    print(f'SAME: {sum(y)}\nDIFF: {len(y)-sum(y)}')
-
-    fnames = [[fnames1[i], fnames2[i]] for i in range(len(fnames1))]
-
-    # TODO: need to pass fnames1 and fnames2 to make images
-    splitter = TrainTestSplitter(test_size=test_prop,
-                                 random_state=42,
-                                 shuffle=True,
-                                 stratify=y)
-
-    splits = splitter(fnames)
-
-    siamese = DataBlock(
-        blocks=(ImageTupleBlock, CategoryBlock),
-        get_items=get_tuples_abstract_fov_same,
-        get_x=get_x,
-        get_y=get_y,
-        splitter=splitter,
-    )
-
-    dls = siamese.dataloaders(
-        fnames,
-        bs=batch_sz,
-        seed=seed,
-        shuffle=True,
-        device=defaults.device,
-    )
-
-    # check that train and test splits have balanced classes
-    train_test = ["TRAIN", "TEST"]
-    for train_test_id in [0, 1]:
-        s = 0
-        d = 0
-        for item in dls.__getitem__(train_test_id).items:
-            # print(label_from_path(item))
-            # print(item)
-            # print('---')
-            if item[3] == 1:
-                s += 1
-            else:
-                d += 1
-        print(
-            f"{train_test[train_test_id]} SET (same, diff): {str(s)}, {str(d)}"
-        )
-
-    return dls
 
 
 def get_img_tuple_abstract(path):
@@ -603,147 +371,6 @@ def get_img_tuple_fov_diff_fv(path):
     )
 
 
-# def make_dls(stim_path, batch_sz=24, seed=0, test_prop=0.2):
-
-#     stim_path = Path(stim_path)
-#     pairs = glob.glob(os.path.join(stim_path, "*.png"))
-#     fnames = sorted(Path(s) for s in pairs)
-#     y = [label_func(item) for item in fnames]
-
-#     splitter = TrainTestSplitter(test_size=test_prop,
-#                                  random_state=42,
-#                                  shuffle=True,
-#                                  stratify=y)
-#     splits = splitter(fnames)
-#     siamese = DataBlock(
-#         blocks=(ImageTupleBlock, CategoryBlock),
-#         get_items=get_tuples_fov_empty,
-#         get_x=get_x,
-#         get_y=get_y,
-#         splitter=splitter,
-#     )
-
-#     dls = siamese.dataloaders(
-#         fnames,
-#         bs=batch_sz,
-#         seed=seed,
-#         shuffle=True,
-#         device=defaults.device,
-#     )
-
-#     # check that train and test splits have balanced classes
-#     train_test = ["TRAIN", "TEST"]
-#     for train_test_id in [0, 1]:
-#         s = 0
-#         d = 0
-#         for item in dls.__getitem__(train_test_id).items:
-#             # print(label_from_path(item))
-#             # print(item)
-#             # print('---')
-#             if item[3] == 1:
-#                 s += 1
-#             else:
-#                 d += 1
-#         print(
-#             f"{train_test[train_test_id]} SET (same, diff): {str(s)}, {str(d)}"
-#         )
-
-#     return dls
-
-
-def make_dls_fov_same(stim_path, batch_sz=24, seed=0, test_prop=0.2):
-
-    stim_path = Path(stim_path)
-    pairs = glob.glob(os.path.join(stim_path, "*.png"))
-    fnames = sorted(Path(s) for s in pairs)
-    y = [label_func(item) for item in fnames]
-
-    splitter = TrainTestSplitter(test_size=test_prop,
-                                 random_state=42,
-                                 shuffle=True,
-                                 stratify=y)
-
-    siamese = DataBlock(
-        blocks=(ImageTupleBlock, CategoryBlock),
-        get_items=get_tuples_fov_same,
-        get_x=get_x,
-        get_y=get_y,
-        splitter=splitter,
-    )
-
-    dls = siamese.dataloaders(
-        fnames,
-        bs=batch_sz,
-        seed=seed,
-        shuffle=True,
-        device=defaults.device,
-    )
-
-    return dls
-
-
-def make_dls_fov_diff(stim_path, batch_sz=24, seed=0, test_prop=0.2):
-
-    stim_path = Path(stim_path)
-    pairs = glob.glob(os.path.join(stim_path, "*.png"))
-    fnames = sorted(Path(s) for s in pairs)
-    y = [label_func(item) for item in fnames]
-
-    splitter = TrainTestSplitter(test_size=test_prop,
-                                 random_state=42,
-                                 shuffle=True,
-                                 stratify=y)
-
-    siamese = DataBlock(
-        blocks=(ImageTupleBlock, CategoryBlock),
-        get_items=get_tuples_fov_diff,
-        get_x=get_x,
-        get_y=get_y,
-        splitter=splitter,
-    )
-
-    dls = siamese.dataloaders(
-        fnames,
-        bs=batch_sz,
-        seed=seed,
-        shuffle=True,
-        device=defaults.device,
-    )
-
-    return dls
-
-
-def make_dls_fov_diff_fv(stim_path, batch_sz=24, seed=0, test_prop=0.2):
-
-    stim_path = Path(stim_path)
-    pairs = glob.glob(os.path.join(stim_path, "*.png"))
-    fnames = sorted(Path(s) for s in pairs)
-    y = [label_func(item) for item in fnames]
-
-    splitter = TrainTestSplitter(test_size=test_prop,
-                                 random_state=42,
-                                 shuffle=True,
-                                 stratify=y)
-    splits = splitter(fnames)
-    siamese = DataBlock(
-        blocks=(ImageTupleBlock, CategoryBlock),
-        get_items=get_tuples_fov_diff_fv,
-        get_x=get_x,
-        get_y=get_y,
-        splitter=splitter,
-    )
-
-    dls = siamese.dataloaders(
-        fnames,
-        bs=batch_sz,
-        seed=seed,
-        shuffle=True,
-        device=defaults.device,
-    )
-
-    return dls
-
-
 def plot_filters_multi_channel(t, path=""):
 
     # get the number of kernels
@@ -780,7 +407,7 @@ def plot_filters_multi_channel(t, path=""):
     plt.show()
 
 
-def make_cf(cf_y, cf_pred, cycle, epoch, path=""):
+def plot_cf(cf_y, cf_pred, cycle, epoch, path=""):
     plt.figure(figsize=(7, 7))
     cf_matrix = confusion_matrix(cf_y, cf_pred)
     df_cm = pd.DataFrame(
@@ -818,208 +445,6 @@ def plot_acc(tr_acc, te_acc, cycle, epoch, path=""):
     plt.legend()
     if path != "":
         plt.savefig(os.path.join(path, f"acc_{cycle+1}x{epoch+1}.png"))
-    plt.show()
-
-
-def test_net_fov_decode(net, p):
-
-    cycles = p[0]
-    epochs = p[1]
-    train_loader = p[2]
-    test_loader = p[3]
-    noise_vars = p[4]
-
-    X = []
-    y = []
-    res = []
-
-    # TODO: Here, we need to assess if image category can be decoded via
-    # something like MVPA from fov V1. We first need to extract X and y and
-    # then pipe into a standard sklearn svm pipeline.
-
-    # TODO: Does it make sense to revise the def of model 0 to include FB?
-    net.fb.register_forward_hook(lambda m, input, output: print(output))
-
-    net.eval()
-    with torch.no_grad():
-        for (inputs, labels) in train_loader:
-
-            # TODO: get activation in v1 ROIs
-            # TODO: With the hook above, I believe this will only print.
-            # TODO: Revise from here...
-            X = net(inputs)
-            y = labels
-
-    X = x
-    y = y
-
-    clf = make_pipeline(StandardScaler(), SVC())
-
-    skf = StratifiedKFold(n_splits=5)
-
-    f = 0
-    for train_index, test_index in skf.split(X, y):
-        f += 1
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
-        clf.fit(X_train, y_train)
-        acc = clf.score(X_test, y_test)
-        d = pd.DataFrame({'fold': f, 'acc': acc})
-        res.append(d)
-
-    res = pd.concat(res)
-
-    return res
-
-
-def test_net_noise(net, p):
-
-    cycles = p[0]
-    epochs = p[1]
-    train_loader = p[2]
-    test_loader = p[3]
-    noise_vars = p[4]
-
-    res = []
-
-    for v in noise_vars:
-
-        for cycle in range(cycles):
-
-            tr_loss = []
-            tr_acc = []
-            te_loss = []
-            te_acc = []
-
-            for epoch in range(epochs):
-
-                net.eval()
-
-                te_running_loss = 0.0
-                te_correct = 0
-                te_total = 0
-                cf_pred = []
-                cf_y = []
-                with torch.no_grad():
-                    start = time.time()
-                    for (inputs, labels) in train_loader:
-
-                        inputs = (
-                            inputs[0], inputs[1], inputs[2] +
-                            v * torch.randn(inputs[2].shape, device='cuda'))
-
-                        out = net(inputs)
-                        _, pred = torch.max(out, 1)
-                        loss = criterion(out, labels)
-                        te_running_loss += loss.item()
-                        te_total += labels.size(0)
-                        te_correct += (pred == labels).sum().item()
-                        cf_y += labels.cpu().detach().tolist()
-                        cf_pred += pred.cpu().detach().tolist()
-
-                    te_acc.append(100 * te_correct / te_total)
-                    te_loss.append(te_running_loss)
-                    end = time.time() - start
-                    print(cycle + 1, epoch + 1, te_running_loss,
-                          100 * te_correct / te_total, end)
-
-        d = pd.DataFrame({
-            'noise_var': v,
-            'te_loss': te_loss,
-            'te_acc': te_acc
-        })
-        res.append(d)
-
-    res = pd.concat(res)
-
-    return res
-
-
-def test_net_fovimg(net, p):
-
-    cycles = p[0]
-    epochs = p[1]
-    train_loader = p[2]
-    test_loader = p[3]
-    train_loader_same = p[4]
-    test_loader_same = p[5]
-    train_loader_diff = p[6]
-    test_loader_diff = p[7]
-
-    tl_list = [train_loader, train_loader_same, train_loader_diff]
-    tl_names = ['base', 'same', 'diff']
-
-    res = []
-
-    criterion = nn.CrossEntropyLoss()
-
-    for ii, tl in enumerate(tl_list):
-
-        for cycle in range(cycles):
-
-            tr_loss = []
-            tr_acc = []
-            te_loss = []
-            te_acc = []
-
-            for epoch in range(epochs):
-
-                net.eval()
-
-                te_running_loss = 0.0
-                te_correct = 0
-                te_total = 0
-                cf_pred = []
-                cf_y = []
-                with torch.no_grad():
-                    start = time.time()
-                    for (inputs, labels) in tl:
-
-                        fig, ax = plt.subplots(1, 3, squeeze=False)
-                        fov_img = inputs[2].detach().cpu().numpy()
-                        p1_img = inputs[0].detach().cpu().numpy()
-                        p2_img = inputs[1].detach().cpu().numpy()
-                        ax[0, 0].imshow(p1_img[0, 0, :, :])
-                        ax[0, 1].imshow(p2_img[0, 0, :, :])
-                        ax[0, 2].imshow(fov_img[0, 0, :, :])
-                        plt.show()
-
-                        out = net(inputs)
-                        _, pred = torch.max(out, 1)
-                        loss = criterion(out, labels)
-                        te_running_loss += loss.item()
-                        te_total += labels.size(0)
-                        te_correct += (pred == labels).sum().item()
-                        cf_y += labels.cpu().detach().tolist()
-                        cf_pred += pred.cpu().detach().tolist()
-
-                    te_acc.append(100 * te_correct / te_total)
-                    te_loss.append(te_running_loss)
-                    end = time.time() - start
-                    print(cycle + 1, epoch + 1, te_running_loss,
-                          100 * te_correct / te_total, end)
-
-        d = pd.DataFrame({
-            'net': net.module.model_name,
-            'tl': [tl_names[ii]],
-            'te_loss': te_loss,
-            'te_acc': te_acc
-        })
-        res.append(d)
-
-    res = pd.concat(res)
-
-    return res
-
-
-def inspect_results_test(res):
-
-    fig, ax = plt.subplots(1, len(res), figsize=(12, 4), squeeze=False)
-
-    for i in range(len(res)):
-        sn.violinplot(data=res[i], x='noise_var', y='te_acc', ax=ax[0, i])
-
-    plt.tight_layout()
     plt.show()
 
 
@@ -1066,148 +491,175 @@ def inspect_results(res):
         plt.show()
 
 
-def test_nets_noise(p):
+def train_networks(nets, criterion, stim_path, batch_sz, cycles, epochs, seed):
+    dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
+    for net in nets:
+        print(net.module.model_name)
+        net.module.init_weights()
+        net.module.init_pretrained_weights()
+        net.module.freeze_pretrained_weights()
+        params_to_update = net.parameters()
+        optimizer = optim.Adam(filter(lambda p: p.requires_grad,
+                                      params_to_update),
+                               lr=lr_min,
+                               weight_decay=weight_decay)
+        res = net.module.train_net(optimizer, criterion, dls, cycles, epochs)
 
-    stim_path = p[0]
-    epochs = p[1]
-    cycles = p[2]
-    batch_sz = p[3]
-    lr_min = p[4]
-    weight_decay = p[5]
-    w_dropout_1 = p[6]
-    w_dropout_2 = p[7]
-    seed = p[8]
+        (tr_loss, tr_acc, te_loss, te_acc, cf_pred, cf_y) = res
+        d = pd.DataFrame({
+            'tr_loss': tr_loss,
+            'tr_acc': tr_acc,
+            'te_loss': te_loss,
+            'te_acc': te_acc
+        })
+        d.to_csv('results_train.csv')
 
-    net_0 = SiameseNet0(w_dropout_1, w_dropout_2)
-    net_1 = SiameseNet1(w_dropout_1, w_dropout_2)
-    net_2 = SiameseNet2(w_dropout_1, w_dropout_2)
-    net_3 = SiameseNet12(w_dropout_1, w_dropout_2)
-    net_4 = SiameseNet22(w_dropout_1, w_dropout_2)
+        torch.save(net.state_dict(),
+                   'net_111' + net.module.model_name + '.pth')
 
-    nets = [net_0, net_1, net_2, net_3, net_4]
-    nets = [nn.DataParallel(x) for x in nets]
-
-    [
-        x.load_state_dict(torch.load('net_' + x.module.model_name + '.pth'))
-        for x in nets
-    ]
-
-    [x.to('cuda') for x in nets]
-
-    dls = make_dls(stim_path, batch_sz, seed)
-    train_loader = dls.train
-    test_loader = dls.valid
-    # dls.show_batch(max_n = 2)
-    # plt.show()
-
-    cycles = 1
-    epochs = 1
-    noise_levels = np.linspace(0.0, 2.0, 10)
-    batch_sz = test_loader.n
-
-    p = (cycles, epochs, train_loader, test_loader, noise_levels)
-
-    res = [test_net_noise(x, p) for x in nets]
-
-    return res
+        return res
 
 
-def test_nets_fovimg(p):
+def test_noise(nets, criterion, stim_path, batch_sz, seed):
+    d = []
+    noise_sd = np.linspace(0.0, 100.0, 2)
+    for v in noise_sd:
+        dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
+        dls.add_tfms([add_fov_noise(0, v)], 'before_batch', 'valid')
+        # dls.valid.show_batch()
+        # plt.show()
+        # plt.close('all')
 
-    stim_path = p[0]
-    epochs = p[1]
-    cycles = p[2]
-    batch_sz = p[3]
-    lr_min = p[4]
-    weight_decay = p[5]
-    w_dropout_1 = p[6]
-    w_dropout_2 = p[7]
-    seed = p[8]
+        for net in nets:
+            print(net.module.model_name)
+            net.load_state_dict(
+                torch.load('net_111' + net.module.model_name + '.pth',
+                           map_location=torch.device('cpu')))
+            res = net.module.test_net(criterion, dls[1])
+            (te_loss, te_acc, cf_pred, cf_y) = res
+            d.append(
+                pd.DataFrame({
+                    'noise_sd': v,
+                    'net': net.module.model_name,
+                    'te_acc': te_acc
+                }))
+    d = pd.concat(d)
+    d.to_csv('results_test_noise.csv')
 
-    net_0 = SiameseNet0(w_dropout_1, w_dropout_2)
-    net_1 = SiameseNet1(w_dropout_1, w_dropout_2)
-    net_2 = SiameseNet2(w_dropout_1, w_dropout_2)
-    net_3 = SiameseNet12(w_dropout_1, w_dropout_2)
-    net_4 = SiameseNet22(w_dropout_1, w_dropout_2)
+    sn.scatterplot(data=d, x='noise_sd', y='te_acc', hue='net')
+    plt.savefig('results_test_noise.pdf')
+    plt.close()
 
-    nets = [net_0, net_1, net_2, net_3, net_4]
-    nets = [nn.DataParallel(x) for x in nets]
-
-    [
-        x.load_state_dict(torch.load('net_' + x.module.model_name + '.pth'))
-        for x in nets
-    ]
-
-    [x.to('cuda') for x in nets]
-
-    dls = make_dls(stim_path, batch_sz, seed)
-    train_loader = dls.train
-    test_loader = dls.valid
-    # dls.show_batch(max_n = 2)
-    # plt.show()
-
-    dls_same = make_dls_fov_same(stim_path, batch_sz, seed)
-    train_loader_same = dls_same.train
-    test_loader_same = dls_same.valid
-
-    dls_diff = make_dls_fov_diff(stim_path, batch_sz, seed)
-    train_loader_diff = dls_diff.train
-    test_loader_diff = dls_diff.valid
-
-    cycles = 1
-    epochs = 1
-    noise_levels = np.linspace(0.0, 3.0, 100)
-    batch_sz = test_loader.n
-
-    p = (cycles, epochs, train_loader, test_loader, train_loader_same,
-         test_loader_same, train_loader_diff, test_loader_diff)
-
-    res = [test_net_fovimg(x, p) for x in nets]
-
-    return res
+    return d
 
 
-def test_nets_fov_decode(p):
+def test_fov_img(nets, criterion, stim_path, batch_sz, seed):
+    d_empty = []
+    d_same = []
+    d_diff = []
+    dls_empty = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
+    dls_same = make_dls(stim_path, get_img_tuple_fov_same, batch_sz, seed)
+    dls_diff = make_dls(stim_path, get_img_tuple_fov_diff, batch_sz, seed)
+    for net in nets:
+        print(net.module.model_name)
+        net.load_state_dict(
+            torch.load('net_111' + net.module.model_name + '.pth',
+                       map_location=torch.device('cpu')))
 
-    stim_path = p[0]
-    epochs = p[1]
-    cycles = p[2]
-    batch_sz = p[3]
-    lr_min = p[4]
-    weight_decay = p[5]
-    w_dropout_1 = p[6]
-    w_dropout_2 = p[7]
-    seed = p[8]
+        res_empty = net.module.test_net(criterion, dls_empty[1])
+        res_same = net.module.test_net(criterion, dls_same[1])
+        res_diff = net.module.test_net(criterion, dls_diff[1])
+        d_empty.append(
+            pd.DataFrame({
+                'condition': 'empty',
+                'net': net.module.model_name,
+                'te_acc': res_empty[1]
+            }))
+        d_same.append(
+            pd.DataFrame({
+                'condition': 'same',
+                'net': net.module.model_name,
+                'te_acc': res_same[1]
+            }))
+        d_diff.append(
+            pd.DataFrame({
+                'condition': 'diff',
+                'net': net.module.model_name,
+                'te_acc': res_diff[1]
+            }))
+    d_empty = pd.concat(d_empty)
+    d_same = pd.concat(d_same)
+    d_diff = pd.concat(d_diff)
+    d = [d_empty, d_same, d_diff]
+    d = pd.concat(d)
+    d.to_csv('results_test_fovimg.csv')
 
-    net_0 = SiameseNet0(w_dropout_1, w_dropout_2)
-    net_1 = SiameseNet1(w_dropout_1, w_dropout_2)
-    net_2 = SiameseNet2(w_dropout_1, w_dropout_2)
-    net_3 = SiameseNet12(w_dropout_1, w_dropout_2)
-    net_4 = SiameseNet22(w_dropout_1, w_dropout_2)
+    sn.barplot(data=d, x='net', y='te_acc', hue='condition')
+    plt.savefig('results_test_fovimg.pdf')
+    plt.close()
 
-    nets = [net_0, net_1, net_2, net_3, net_4]
-    nets = [nn.DataParallel(x) for x in nets]
 
-    [
-        x.load_state_dict(torch.load('net_' + x.module.model_name + '.pth'))
-        for x in nets
-    ]
+def test_classify(nets, criterion, stim_path, batch_sz, seed):
 
-    [x.to('cuda') for x in nets]
+    res = []
+    # TODO: want to include net_0 but need fb
+    # nets = nets[1:]
+    dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
+    for net in nets:
+        print(net.module.model_name)
+        # net.load_state_dict(
+        #     torch.load('net_111' + net.module.model_name + '.pth',
+        #                map_location=torch.device(defaults.device)))
+        net.load_state_dict(
+            torch.load('net_111' + net.module.model_name + '.pth',
+                       map_location='cpu'))
+        net = net.module.to('cpu')
 
-    dls = make_dls(stim_path, batch_sz, seed)
-    train_loader = dls.train
-    test_loader = dls.valid
-    # dls.show_batch(max_n = 2)
-    # plt.show()
+        activation = {}
 
-    cycles = 1
-    epochs = 1
-    noise_levels = np.linspace(0.0, 3.0, 100)
-    batch_sz = test_loader.n
+        def get_activation(name):
+            def hook(model, input, output):
+                activation[name] = output.detach()
 
-    p = (cycles, epochs, train_loader, test_loader)
+            return hook
 
-    res = [test_net_fov_decode(x, p) for x in nets]
+        handle = net.fb[0].register_forward_hook(get_activation('fb'))
 
-    return res
+        X = []
+        y = []
+
+        net.eval()
+        with torch.no_grad():
+            for (inputs, labels) in dls[0]:
+                out = net(inputs)
+                X.append(activation['fb'].numpy())
+                y.append(labels.numpy())
+
+        X = np.vstack(X)
+        X = X.reshape(X.shape[0], -1)
+        y = np.hstack(y)
+
+        pipe = Pipeline([('scaler', StandardScaler()), ('svc', SVC())])
+        skf = StratifiedKFold(n_splits=5)
+
+        f = 0
+        for train_index, test_index in skf.split(X, y):
+            f += 1
+            X_train, X_test = X[train_index, :], X[test_index, :]
+            y_train, y_test = y[train_index], y[test_index]
+            pipe.fit(X_train, y_train)
+            acc = pipe.score(X_test, y_test)
+            d = pd.DataFrame({
+                'net': net.model_name,
+                'fold': f,
+                'acc': acc
+            },
+                             index=[f])
+            res.append(d)
+
+    res = pd.concat(res)
+    res.to_csv('results_test_classify.csv')
+
+    sn.barplot(data=res, x='net', y='acc')
+    plt.savefig('results_test_classify.pdf')
+    plt.close()

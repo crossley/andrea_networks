@@ -106,6 +106,8 @@ class SiameseNet(nn.Module):
         train_loader = data_loader.train
         test_loader = data_loader.valid
 
+        stop_train_crit = 70
+
         for cycle in range(cycles):
             tr_loss = []
             tr_acc = []
@@ -157,6 +159,11 @@ class SiameseNet(nn.Module):
                           "{0:0.2f}".format(100 * tr_correct / tr_total),
                           "{0:0.2f}".format(100 * te_correct / te_total),
                           "{0:0.2f}".format(end))
+
+                if te_acc[-1] >= stop_train_crit:
+                    break
+            if te_acc[-1] >= stop_train_crit:
+                break
 
         return (tr_loss, tr_acc, te_loss, te_acc, cf_pred, cf_y)
 
