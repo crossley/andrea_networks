@@ -25,7 +25,7 @@ if __name__ == '__main__':
     # stim_path = Path(r'D:\Andrea_NN\stimuli\no_transf')
     # stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
     stim_path = Path('../samediff_no-transf')
-    epochs = 25
+    epochs = 1
     cycles = 1
     batch_sz = 24
     lr_min = 1e-4
@@ -40,17 +40,14 @@ if __name__ == '__main__':
     net_3 = SiameseNet12(w_dropout_1, w_dropout_2)
     net_4 = SiameseNet22(w_dropout_1, w_dropout_2)
 
-    nets = [net_0, net_1, net_2, net_3, net_4]
+    # TODO: toggle for debug
+    # nets = [net_0, net_1, net_2, net_3, net_4]
+    nets = [net_1, net_3]
 
     nets = [x.to(defaults.device) for x in nets]
     nets = [nn.DataParallel(x) for x in nets]
 
     criterion = nn.CrossEntropyLoss()
-
-    train_networks()
-    test_noise()
-    test_fov_img()
-    test_classify()
 
     def train_networks(nets, criterion, stim_path, batch_sz, cycles, epochs,
                        seed):
@@ -68,8 +65,20 @@ if __name__ == '__main__':
                                    weight_decay=weight_decay)
             res = net.module.train_net(optimizer, criterion, dls, cycles,
                                        epochs)
+
+            (tr_loss, tr_acc, te_loss, te_acc, cf_pred, cf_y) = res
+            d = pd.DataFrame({
+                'tr_loss': tr_loss,
+                'tr_acc': tr_acc,
+                'te_loss': te_loss,
+                'te_acc': te_acc
+            })
+            d.to_csv('results_train.csv')
+
             torch.save(net.state_dict(),
                        'net_111' + net.module.model_name + '.pth')
+
+            return res
 
     def test_noise(nets, criterion, stim_path, batch_sz, seed):
         d = []
@@ -95,9 +104,13 @@ if __name__ == '__main__':
                         'te_acc': te_acc
                     }))
         d = pd.concat(d)
+        d.to_csv('results_test_noise.csv')
+
         sn.scatterplot(data=d, x='noise_sd', y='te_acc', hue='net')
-        plt.show()
-        # TODO: write test results to file
+        plt.savefig('results_test_noise.pdf')
+        plt.close()
+
+        return d
 
     def test_fov_img(nets, criterion, stim_path, batch_sz, seed):
         d_empty = []
@@ -139,15 +152,17 @@ if __name__ == '__main__':
         d_diff = pd.concat(d_diff)
         d = [d_empty, d_same, d_diff]
         d = pd.concat(d)
+        d.to_csv('results_test_fovimg.csv')
+
         sn.barplot(data=d, x='net', y='te_acc', hue='condition')
-        plt.show()
-        # TODO: write test results to file
+        plt.savefig('results_test_fovimg.pdf')
+        plt.close()
 
     def test_classify(nets, criterion, stim_path, batch_sz, seed):
 
         res = []
         # TODO: want to include net_0 but need fb
-        nets = nets[1:]
+        # nets = nets[1:]
         dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
         for net in nets:
             print(net.module.model_name)
@@ -202,14 +217,17 @@ if __name__ == '__main__':
                 res.append(d)
 
         res = pd.concat(res)
+        res.to_csv('results_test_classify.csv')
+
         sn.barplot(data=res, x='net', y='acc')
-        plt.show()
-        # TODO: write test results to file
+        plt.savefig('results_test_classify.pdf')
+        plt.close()
 
+    train_networks(nets, criterion, stim_path, batch_sz, cycles, epochs, seed)
+    test_noise(nets, criterion, stim_path, batch_sz, seed)
+    test_fov_img(nets, criterion, stim_path, batch_sz, seed)
+    test_classify(nets, criterion, stim_path, batch_sz, seed)
 
-# get_img_tuple_fov_empty
-# get_img_tuple_fov_same
-# get_img_tuple_fov_diff
 # get_img_tuple_abstract
 # get_img_tuple_abstract_fov_diff
 # get_img_tuple_abstract_fov_same

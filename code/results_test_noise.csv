@@ -1,0 +1,5 @@
+,noise_sd,net,te_acc
+0,0.0,SiameseNet1,54.166666666666664
+0,0.0,SiameseNet12,50.0
+0,100.0,SiameseNet1,50.0
+0,100.0,SiameseNet12,50.0
