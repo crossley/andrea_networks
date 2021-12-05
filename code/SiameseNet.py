@@ -106,7 +106,7 @@ class SiameseNet(nn.Module):
         train_loader = data_loader.train
         test_loader = data_loader.valid
 
-        stop_train_crit = 70
+        stop_train_crit = 75.0
 
         for cycle in range(cycles):
             tr_loss = []

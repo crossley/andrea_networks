@@ -23,9 +23,9 @@ if __name__ == '__main__':
     torch.manual_seed(seed)
 
     # stim_path = Path(r'D:\Andrea_NN\stimuli\no_transf')
-    # stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
-    stim_path = Path('../samediff_no-transf')
-    epochs = 1
+    stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
+    # stim_path = Path('../samediff_no-transf')
+    epochs = 100
     cycles = 1
     batch_sz = 24
     lr_min = 1e-4
@@ -46,10 +46,10 @@ if __name__ == '__main__':
 
     criterion = nn.CrossEntropyLoss()
 
-    train_networks(nets, criterion, stim_path, batch_sz, cycles, epochs, seed)
+    train_networks(nets, criterion, stim_path, batch_sz, cycles, epochs, lr_min, weight_decay, seed)
     test_noise(nets, criterion, stim_path, batch_sz, seed)
     test_fov_img(nets, criterion, stim_path, batch_sz, seed)
-    test_classify(nets, criterion, stim_path, batch_sz, seed)
+    test_classify(nets[1:], criterion, stim_path, batch_sz, seed)
 
 # TODO:
 # Try different feedback architectures

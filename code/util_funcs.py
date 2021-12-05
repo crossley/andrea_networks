@@ -42,8 +42,7 @@ def make_dls(stim_path,
         seed=seed,
         shuffle=True,
         num_workers=0,
-        # device=torch.device('cuda'),
-        device=torch.device('cpu'),
+        device=defaults.device,
     )
 
     return dls
@@ -59,17 +58,18 @@ def get_tuples(files):
 
 
 class add_fov_noise(Transform):
-    def __init__(self, noise_mean, noise_sd):
+    def __init__(self, noise_mean, noise_sd, device):
         super(add_fov_noise, self).__init__()
         self.noise_mean = noise_mean
         self.noise_sd = noise_sd
+        self.device = device
 
     def encodes(self, o):
         v = 100
         oo = []
         for i in range(len(o)):
             tmp = self.noise_mean + self.noise_sd * torch.randn(
-                o[i][0][2].size(), device=defaults.device)
+                o[i][0][2].size(), device=self.device)
             tmp = TensorImage(tmp)
             oo.append((o[i][0].add((0, 0, tmp)), o[i][1]))
         return oo
@@ -448,50 +448,7 @@ def plot_acc(tr_acc, te_acc, cycle, epoch, path=""):
     plt.show()
 
 
-def inspect_results(res):
-
-    for r in res:
-
-        tr_loss = r[0]
-        tr_acc = r[1]
-        te_loss = r[2]
-        te_acc = r[3]
-        cf_pred = r[4]
-        cf_y = r[5]
-
-        fig, ax = plt.subplots(1, 3, figsize=(10, 4), squeeze=False)
-
-        cf_matrix = confusion_matrix(cf_y, cf_pred)
-        df_cm = pd.DataFrame(
-            cf_matrix,
-            index=[i for i in ["Same", "Different"]],
-            columns=[i for i in ["Same", "Different"]],
-        )
-        sn.heatmap(df_cm,
-                   annot=True,
-                   cbar=False,
-                   cmap="Blues",
-                   fmt="d",
-                   ax=ax[0, 0])
-        ax[0, 0].set_xlabel("Predicted")
-        ax[0, 0].set_ylabel("Actual")
-
-        ax[0, 1].plot(tr_loss, label="Train")
-        ax[0, 1].plot(te_loss, label="Test")
-        ax[0, 1].set_xlabel("Epoch")
-        ax[0, 1].set_ylabel("Loss")
-
-        ax[0, 2].plot(tr_acc, label="Train")
-        ax[0, 2].plot(te_acc, label="Test")
-        ax[0, 2].set_xlabel("Epoch")
-        ax[0, 2].set_ylabel("Accuracy")
-
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
-
-
-def train_networks(nets, criterion, stim_path, batch_sz, cycles, epochs, seed):
+def train_networks(nets, criterion, stim_path, batch_sz, cycles, epochs, lr_min, weight_decay, seed):
     dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
     for net in nets:
         print(net.module.model_name)
@@ -517,24 +474,24 @@ def train_networks(nets, criterion, stim_path, batch_sz, cycles, epochs, seed):
         torch.save(net.state_dict(),
                    'net_111' + net.module.model_name + '.pth')
 
-        return res
-
 
 def test_noise(nets, criterion, stim_path, batch_sz, seed):
     d = []
-    noise_sd = np.linspace(0.0, 100.0, 2)
+    noise_sd = np.linspace(0.0, 100.0, 25)
     for v in noise_sd:
         dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
-        dls.add_tfms([add_fov_noise(0, v)], 'before_batch', 'valid')
+        dls.to('cpu')
+        dls.add_tfms([add_fov_noise(0, v, 'cpu')], 'before_batch', 'valid')
+        dls.to(defaults.device)
         # dls.valid.show_batch()
         # plt.show()
         # plt.close('all')
-
+        
         for net in nets:
             print(net.module.model_name)
             net.load_state_dict(
                 torch.load('net_111' + net.module.model_name + '.pth',
-                           map_location=torch.device('cpu')))
+                           map_location=defaults.device))
             res = net.module.test_net(criterion, dls[1])
             (te_loss, te_acc, cf_pred, cf_y) = res
             d.append(
@@ -564,7 +521,7 @@ def test_fov_img(nets, criterion, stim_path, batch_sz, seed):
         print(net.module.model_name)
         net.load_state_dict(
             torch.load('net_111' + net.module.model_name + '.pth',
-                       map_location=torch.device('cpu')))
+                       map_location=defaults.device))
 
         res_empty = net.module.test_net(criterion, dls_empty[1])
         res_same = net.module.test_net(criterion, dls_same[1])
@@ -612,7 +569,7 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed):
         #                map_location=torch.device(defaults.device)))
         net.load_state_dict(
             torch.load('net_111' + net.module.model_name + '.pth',
-                       map_location='cpu'))
+                       map_location=defaults.device))
         net = net.module.to('cpu')
 
         activation = {}
@@ -628,12 +585,13 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed):
         X = []
         y = []
 
+        net.to(defaults.device)
         net.eval()
         with torch.no_grad():
             for (inputs, labels) in dls[0]:
                 out = net(inputs)
-                X.append(activation['fb'].numpy())
-                y.append(labels.numpy())
+                X.append(activation['fb'].to('cpu').numpy())
+                y.append(labels.to('cpu').numpy())
 
         X = np.vstack(X)
         X = X.reshape(X.shape[0], -1)
