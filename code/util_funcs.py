@@ -448,7 +448,8 @@ def plot_acc(tr_acc, te_acc, cycle, epoch, path=""):
     plt.show()
 
 
-def train_networks(nets, criterion, stim_path, batch_sz, cycles, epochs, lr_min, weight_decay, seed):
+def train_networks(nets, criterion, stim_path, batch_sz, cycles, epochs,
+                   lr_min, weight_decay, seed):
     dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
     for net in nets:
         print(net.module.model_name)
@@ -486,7 +487,7 @@ def test_noise(nets, criterion, stim_path, batch_sz, seed):
         # dls.valid.show_batch()
         # plt.show()
         # plt.close('all')
-        
+
         for net in nets:
             print(net.module.model_name)
             net.load_state_dict(

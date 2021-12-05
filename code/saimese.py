@@ -46,7 +46,8 @@ if __name__ == '__main__':
 
     criterion = nn.CrossEntropyLoss()
 
-    train_networks(nets, criterion, stim_path, batch_sz, cycles, epochs, lr_min, weight_decay, seed)
+    train_networks(nets, criterion, stim_path, batch_sz, cycles, epochs,
+                   lr_min, weight_decay, seed)
     test_noise(nets, criterion, stim_path, batch_sz, seed)
     test_fov_img(nets, criterion, stim_path, batch_sz, seed)
     test_classify(nets[1:], criterion, stim_path, batch_sz, seed)
