@@ -8,55 +8,6 @@ Created on Sun Nov 21 10:02:00 2021
 from imports import *
 
 
-def make_dls(stim_path,
-             get_img_tuple_func,
-             batch_sz=24,
-             seed=0,
-             test_prop=0.2):
-    stim_path = Path(stim_path)
-    pairs = glob.glob(os.path.join(stim_path, "*.png"))
-    fnames = sorted(Path(s) for s in pairs)
-    y = [label_func(item) for item in fnames]
-
-    splitter = TrainTestSplitter(test_size=test_prop,
-                                 random_state=seed,
-                                 shuffle=True,
-                                 stratify=y)
-
-    siamese = DataBlock(
-        blocks=(ImageTupleBlock, CategoryBlock),
-        get_items=lambda f: [[
-            get_img_tuple_func(x)[0],
-            get_img_tuple_func(x)[1],
-            get_img_tuple_func(x)[2],
-            get_img_tuple_func(x)[3],
-        ] for x in f],
-        get_x=get_x,
-        get_y=get_y,
-        splitter=splitter,
-    )
-
-    dls = siamese.dataloaders(
-        fnames,
-        bs=batch_sz,
-        seed=seed,
-        shuffle=True,
-        num_workers=0,
-        device=defaults.device,
-    )
-
-    return dls
-
-
-def get_tuples(files):
-    return [[
-        get_img_tuple_func(f)[0],
-        get_img_tuple_func(f)[1],
-        get_img_tuple_func(f)[2],
-        get_img_tuple_func(f)[3],
-    ] for f in files]
-
-
 class add_fov_noise(Transform):
     def __init__(self, noise_mean, noise_sd, device):
         super(add_fov_noise, self).__init__()
@@ -92,6 +43,56 @@ class ImageTuple(fastuple):
         return show_image(torch.cat([t1, line, t2, line, t3], dim=2),
                           ctx=ctx,
                           **kwargs)
+
+
+def make_dls(stim_path,
+             get_img_tuple_func,
+             batch_sz=24,
+             seed=0,
+             test_prop=0.2,
+             shuffle=True):
+    stim_path = Path(stim_path)
+    pairs = glob.glob(os.path.join(stim_path, "*.png"))
+    fnames = sorted(Path(s) for s in pairs)
+    y = [label_func(item) for item in fnames]
+
+    splitter = TrainTestSplitter(test_size=test_prop,
+                                 random_state=seed,
+                                 shuffle=True,
+                                 stratify=y)
+
+    siamese = DataBlock(
+        blocks=(ImageTupleBlock, CategoryBlock),
+        get_items=lambda f: [[
+            get_img_tuple_func(x)[0],
+            get_img_tuple_func(x)[1],
+            get_img_tuple_func(x)[2],
+            get_img_tuple_func(x)[3],
+        ] for x in f],
+        get_x=get_x,
+        get_y=get_y,
+        splitter=splitter,
+    )
+
+    dls = siamese.dataloaders(
+        fnames,
+        bs=batch_sz,
+        seed=seed,
+        shuffle=shuffle,
+        num_workers=0,
+        device=defaults.device,
+    )
+
+    return dls
+
+
+def get_tuples(files):
+    return [[
+        get_img_tuple_func(f)[0],
+        get_img_tuple_func(f)[1],
+        get_img_tuple_func(f)[2],
+        get_img_tuple_func(f)[3],
+    ] for f in files]
 
 
 def ImageTupleBlock():
@@ -371,42 +372,6 @@ def get_img_tuple_fov_diff_fv(path):
     )
 
 
-def plot_filters_multi_channel(t, path=""):
-
-    # get the number of kernels
-    num_kernels = t.shape[0]
-
-    # define number of columns for subplots
-    num_cols = 12
-    # rows = num of kernels
-    num_rows = num_kernels
-
-    # set the figure size
-    fig = plt.figure(figsize=(num_cols, num_rows))
-
-    # looping through all the kernels
-    for i in range(t.shape[0]):
-        ax1 = fig.add_subplot(num_rows, num_cols, i + 1)
-
-        # for each kernel, we convert the tensor to numpy
-        npimg = np.array(t[i].numpy(), np.float32)
-
-        # standardize the numpy image
-        npimg = (npimg - np.mean(npimg)) / np.std(npimg)
-        npimg = np.minimum(1, np.maximum(0, (npimg + 0.5)))
-        npimg = npimg.transpose((1, 2, 0))
-        ax1.imshow(npimg)
-        ax1.axis("off")
-        ax1.set_title(str(i))
-        ax1.set_xticklabels([])
-        ax1.set_yticklabels([])
-
-    plt.tight_layout()
-    if path != "":
-        plt.savefig(path)
-    plt.show()
-
-
 def plot_cf(cf_y, cf_pred, cycle, epoch, path=""):
     plt.figure(figsize=(7, 7))
     cf_matrix = confusion_matrix(cf_y, cf_pred)
@@ -465,15 +430,17 @@ def train_networks(nets, criterion, stim_path, batch_sz, cycles, epochs,
 
         (tr_loss, tr_acc, te_loss, te_acc, cf_pred, cf_y) = res
         d = pd.DataFrame({
+            'net': net.module.model_name,
             'tr_loss': tr_loss,
             'tr_acc': tr_acc,
             'te_loss': te_loss,
             'te_acc': te_acc
         })
-        d.to_csv('results_train.csv')
 
         torch.save(net.state_dict(),
                    'net_111' + net.module.model_name + '.pth')
+
+    d.to_csv('results_train.csv')
 
 
 def test_noise(nets, criterion, stim_path, batch_sz, seed):
@@ -557,43 +524,44 @@ def test_fov_img(nets, criterion, stim_path, batch_sz, seed):
     plt.close()
 
 
+def get_features(net, net_layer, net_layer_name, dls):
+
+    activation = {}
+
+    def get_activation(name):
+        def hook(model, input, output):
+            activation[name] = output.detach()
+
+        return hook
+
+    handle = net_layer[0].register_forward_hook(get_activation(net_layer_name))
+
+    X = []
+    y = []
+
+    net.to(defaults.device)
+    net.eval()
+    with torch.no_grad():
+        for (inputs, labels) in dls[0]:
+            out = net(inputs)
+            X.append(activation['fb'].to('cpu').numpy())
+            y.append(labels.to('cpu').numpy())
+
+    return X, y
+
+
 def test_classify(nets, criterion, stim_path, batch_sz, seed):
 
     res = []
-    # TODO: want to include net_0 but need fb
-    # nets = nets[1:]
     dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
     for net in nets:
         print(net.module.model_name)
-        # net.load_state_dict(
-        #     torch.load('net_111' + net.module.model_name + '.pth',
-        #                map_location=torch.device(defaults.device)))
         net.load_state_dict(
             torch.load('net_111' + net.module.model_name + '.pth',
                        map_location=defaults.device))
         net = net.module.to('cpu')
 
-        activation = {}
-
-        def get_activation(name):
-            def hook(model, input, output):
-                activation[name] = output.detach()
-
-            return hook
-
-        handle = net.fb[0].register_forward_hook(get_activation('fb'))
-
-        X = []
-        y = []
-
-        net.to(defaults.device)
-        net.eval()
-        with torch.no_grad():
-            for (inputs, labels) in dls[0]:
-                out = net(inputs)
-                X.append(activation['fb'].to('cpu').numpy())
-                y.append(labels.to('cpu').numpy())
-
+        X, y = get_features(net, net_layer, net_layer_name, dls)
         X = np.vstack(X)
         X = X.reshape(X.shape[0], -1)
         y = np.hstack(y)
@@ -608,13 +576,14 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed):
             y_train, y_test = y[train_index], y[test_index]
             pipe.fit(X_train, y_train)
             acc = pipe.score(X_test, y_test)
-            d = pd.DataFrame({
-                'net': net.model_name,
-                'fold': f,
-                'acc': acc
-            },
-                             index=[f])
-            res.append(d)
+
+            res.append(
+                pd.DataFrame({
+                    'net': net.model_name,
+                    'fold': f,
+                    'acc': acc
+                },
+                             index=[f]))
 
     res = pd.concat(res)
     res.to_csv('results_test_classify.csv')
@@ -622,3 +591,47 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed):
     sn.barplot(data=res, x='net', y='acc')
     plt.savefig('results_test_classify.pdf')
     plt.close()
+
+
+def inspect_features_fb(nets, stim_path, batch_sz, seed):
+    dls = make_dls(stim_path,
+                   get_img_tuple_fov_empty,
+                   batch_sz,
+                   seed,
+                   shuffle=False)
+
+    for i in range(3):
+        fig, ax = plt.subplots(2, 3, squeeze=False)
+
+        for net in nets:
+            print(net.module.model_name)
+
+            net.load_state_dict(
+                torch.load('net_111' + net.module.model_name + '.pth',
+                        map_location=defaults.device))
+            net = net.module.to('cpu')
+            net_layer = net.fb
+            net_layer_name = 'fb'
+            X, y = get_features(net, net_layer, net_layer_name, dls)
+            X = np.vstack(X)
+            y = np.hstack(y)
+            print(X.shape, y.shape)
+
+            ax[1, 0].imshow(X[i, 0, :, :])
+            ax[1, 1].imshow(X[i, 1, :, :])
+            ax[1, 2].imshow(X[i, 2, :, :])
+
+            net.init_weights()
+            net.init_pretrained_weights()
+            net_layer = net.fb
+            net_layer_name = 'fb'
+            X, y = get_features(net, net_layer, net_layer_name, dls)
+            X = np.vstack(X)
+            y = np.hstack(y)
+            print(X.shape, y.shape)
+
+            ax[0, 0].imshow(X[i, 0, :, :])
+            ax[0, 1].imshow(X[i, 1, :, :])
+            ax[0, 2].imshow(X[i, 2, :, :])
+
+            plt.show()

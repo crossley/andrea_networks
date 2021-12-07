@@ -23,8 +23,8 @@ if __name__ == '__main__':
     torch.manual_seed(seed)
 
     # stim_path = Path(r'D:\Andrea_NN\stimuli\no_transf')
-    stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
-    # stim_path = Path('../samediff_no-transf')
+    # stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
+    stim_path = Path('../samediff_no-transf')
     epochs = 100
     cycles = 1
     batch_sz = 24
@@ -37,20 +37,22 @@ if __name__ == '__main__':
     net_0 = SiameseNet0(w_dropout_1, w_dropout_2)
     net_1 = SiameseNet1(w_dropout_1, w_dropout_2)
     net_2 = SiameseNet2(w_dropout_1, w_dropout_2)
-    net_3 = SiameseNet12(w_dropout_1, w_dropout_2)
-    net_4 = SiameseNet22(w_dropout_1, w_dropout_2)
+    net_02 = SiameseNet02(w_dropout_1, w_dropout_2)
+    net_12 = SiameseNet12(w_dropout_1, w_dropout_2)
+    net_22 = SiameseNet22(w_dropout_1, w_dropout_2)
 
-    nets = [net_0, net_1, net_2, net_3, net_4]
+    nets = [net_0, net_1, net_2, net_02, net_12, net_22]
     nets = [x.to(defaults.device) for x in nets]
     nets = [nn.DataParallel(x) for x in nets]
 
     criterion = nn.CrossEntropyLoss()
 
-    train_networks(nets, criterion, stim_path, batch_sz, cycles, epochs,
-                   lr_min, weight_decay, seed)
-    test_noise(nets, criterion, stim_path, batch_sz, seed)
-    test_fov_img(nets, criterion, stim_path, batch_sz, seed)
-    test_classify(nets[1:], criterion, stim_path, batch_sz, seed)
+    # train_networks(nets, criterion, stim_path, batch_sz, cycles, epochs,
+    #                lr_min, weight_decay, seed)
+    # test_noise(nets, criterion, stim_path, batch_sz, seed)
+    # test_fov_img(nets, criterion, stim_path, batch_sz, seed)
+    # test_classify(nets[1:], criterion, stim_path, batch_sz, seed)
+    # inspect_features_fb(nets[4:], stim_path, batch_sz, seed)
 
 # TODO:
 # Try different feedback architectures

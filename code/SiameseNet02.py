@@ -46,7 +46,7 @@ class SiameseNet0(SiameseNet):
         v4_fov = self.V4(v2_fov)
         vIT_fov = self.IT(v4_fov)
 
-        out = torch.cat((vIT_p1, vIT_p2, vIT_fov), 1)
+        out = torch.cat((vIT_p1 + vIT_fov, vIT_p2 + vIT_fov), 1)
 
         out = self.head(out)
 
