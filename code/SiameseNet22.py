@@ -40,8 +40,9 @@ class SiameseNet22(SiameseNet):
         # feedback from IT
         p_cat = torch.cat((vIT_p1, vIT_p2), 1)
         fb = self.fb(p_cat)
-        
-        m = nn.Upsample((fov_inp.size()[2], fov_inp.size()[3]), mode='bilinear')
+
+        m = nn.Upsample((fov_inp.size()[2], fov_inp.size()[3]),
+                        mode='bilinear')
         fb = m(fb)
 
         v1_fov = self.V1(fb + fov_inp)
