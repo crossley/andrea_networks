@@ -42,7 +42,7 @@ if __name__ == '__main__':
     net_22 = SiameseNet22(w_dropout_1, w_dropout_2)
 
     nets = [net_0, net_1, net_2, net_02, net_12, net_22]
-    nets = [net_1]
+    # nets = [net_1]
     nets = [x.to(defaults.device) for x in nets]
     nets = [nn.DataParallel(x) for x in nets]
 
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     # test_noise(nets, criterion, stim_path, batch_sz, seed)
     # test_fov_img(nets, criterion, stim_path, batch_sz, seed)
     # test_classify(nets[1:], criterion, stim_path, batch_sz, seed)
-    inspect_features_fb(nets, stim_path, batch_sz, seed)
+    # inspect_features_fb(nets, stim_path, batch_sz, seed)
 
 # TODO:
 # Try different feedback architectures
