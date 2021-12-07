@@ -8,21 +8,12 @@ Created on Sun Nov 21 10:10:51 2021
 from imports import *
 
 
-class SiameseNet0(SiameseNet):
+class SiameseNet02(SiameseNet):
     def __init__(self, w_dropout_1, w_dropout_2):
 
-        super(SiameseNet0, self).__init__(w_dropout_1, w_dropout_2, 2)
+        super(SiameseNet02, self).__init__(w_dropout_1, w_dropout_2, 2)
 
-        self.model_name = 'SiameseNet0'
-
-        self.head_mult = 2
-
-        self.fb = nn.Sequential(
-            nn.Conv2d(128, 3, kernel_size=3, stride=1, padding=197),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
-        )
-
+        self.model_name = 'SiameseNet02'
 
     def forward(self, inp):
 

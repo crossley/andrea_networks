@@ -14,26 +14,11 @@ class SiameseNet12(SiameseNet):
         super(SiameseNet12, self).__init__(w_dropout_1, w_dropout_2, 2)
 
         self.model_name = 'SiameseNet12'
-
-        self.head_mult = 2
-
-        # self.fb = nn.Sequential(
-        #     nn.Conv2d(128, 3, kernel_size=3, stride=1, padding=197),
-        #     nn.ReLU(inplace=True),
-        #     nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
-        # )
-
+        
         self.fb = nn.Sequential(
-            AdaptiveConcatPool2d(),
-            nn.Flatten(),
-            nn.BatchNorm1d(256,
-                           eps=1e-05,
-                           momentum=0.1,
-                           affine=True,
-                           track_running_stats=True),
-            nn.Linear(in_features=256,
-                      out_features=3,
-                      bias=False),
+            nn.Conv2d(128, 3, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
         )
 
     def forward(self, inp):

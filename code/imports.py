@@ -43,6 +43,7 @@ from sklearn.model_selection import StratifiedKFold
 
 from SiameseNet import *
 from SiameseNet0 import *
+from SiameseNet02 import *
 from SiameseNet1 import *
 from SiameseNet12 import *
 from SiameseNet2 import *

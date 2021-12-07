@@ -14,26 +14,11 @@ class SiameseNet1(SiameseNet):
         super(SiameseNet1, self).__init__(w_dropout_1, w_dropout_2, 3)
 
         self.model_name = 'SiameseNet1'
-
-        self.head_mult = 2
-
-        # self.fb = nn.Sequential(
-        #     nn.Conv2d(128, 3, kernel_size=3, stride=1, padding=197),
-        #     nn.ReLU(inplace=True),
-        #     nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
-        # )
-
+        
         self.fb = nn.Sequential(
-            AdaptiveConcatPool2d(),
-            nn.Flatten(),
-            nn.BatchNorm1d(256,
-                           eps=1e-05,
-                           momentum=0.1,
-                           affine=True,
-                           track_running_stats=True),
-            nn.Linear(in_features=256,
-                      out_features=3,
-                      bias=False),
+            nn.Conv2d(128, 3, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
         )
 
     def forward(self, inp):
@@ -55,6 +40,9 @@ class SiameseNet1(SiameseNet):
         # feedback from v1
         p_cat = torch.cat((v1_p1, v1_p2), 1)
         fb = self.fb(p_cat)
+        
+        m = nn.Upsample((fov_inp.size()[2], fov_inp.size()[3]), mode='bilinear')
+        fb = m(fb)
 
         v1_fov = self.V1(fb + fov_inp)
         v2_fov = self.V2(v1_fov)

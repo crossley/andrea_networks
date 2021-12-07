@@ -11,18 +11,9 @@ from imports import *
 class SiameseNet0(SiameseNet):
     def __init__(self, w_dropout_1, w_dropout_2):
 
-        super(SiameseNet0, self).__init__(w_dropout_1, w_dropout_2, 2)
+        super(SiameseNet0, self).__init__(w_dropout_1, w_dropout_2, 3)
 
         self.model_name = 'SiameseNet0'
-
-        self.head_mult = 2
-
-        self.fb = nn.Sequential(
-            nn.Conv2d(128, 3, kernel_size=3, stride=1, padding=197),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
-        )
-
 
     def forward(self, inp):
 
@@ -47,7 +38,7 @@ class SiameseNet0(SiameseNet):
         vIT_fov = self.IT(v4_fov)
 
         out = torch.cat((vIT_p1, vIT_p2, vIT_fov), 1)
-
+        
         out = self.head(out)
 
         return out

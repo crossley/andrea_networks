@@ -15,25 +15,10 @@ class SiameseNet22(SiameseNet):
 
         self.model_name = 'SiameseNet22'
 
-        self.head_mult = 2
-
-        # self.fb = nn.Sequential(
-        #     nn.Conv2d(1024, 3, kernel_size=3, stride=1, padding=221),
-        #     nn.ReLU(inplace=True),
-        #     nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
-        # )
-
         self.fb = nn.Sequential(
-            AdaptiveConcatPool2d(),
-            nn.Flatten(),
-            nn.BatchNorm1d(2048,
-                           eps=1e-05,
-                           momentum=0.1,
-                           affine=True,
-                           track_running_stats=True),
-            nn.Linear(in_features=2048,
-                      out_features=3,
-                      bias=False),
+            nn.Conv2d(1024, 3, kernel_size=3, stride=1, padding=0),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
         )
 
     def forward(self, inp):
