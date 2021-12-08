@@ -520,6 +520,7 @@ def test_fov_img(nets, criterion, stim_path, batch_sz, seed):
     d.to_csv('results_test_fovimg.csv')
 
     sn.barplot(data=d, x='net', y='te_acc', hue='condition')
+    plt.xticks(rotation=45)
     plt.savefig('results_test_fovimg.pdf')
     plt.close()
 
