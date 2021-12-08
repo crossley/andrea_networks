@@ -11,9 +11,9 @@ from imports import *
 class SiameseNet(nn.Module):
     def __init__(self, w_dropout_1, w_dropout_2, head_mult):
         super(SiameseNet, self).__init__()
-        
+
         self.head_mult = head_mult
-        
+
         self.V1 = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=7 // 2),
             nn.ReLU(inplace=True),
@@ -42,20 +42,20 @@ class SiameseNet(nn.Module):
             AdaptiveConcatPool2d(),
             nn.Flatten(),
             nn.BatchNorm1d(1024 * self.head_mult,
-                            eps=1e-05,
-                            momentum=0.1,
-                            affine=True,
-                            track_running_stats=True),
+                           eps=1e-05,
+                           momentum=0.1,
+                           affine=True,
+                           track_running_stats=True),
             nn.Dropout(p=w_dropout_1, inplace=False),
             nn.Linear(in_features=1024 * self.head_mult,
                       out_features=512,
                       bias=False),
             nn.ReLU(inplace=True),
             nn.BatchNorm1d(512,
-                            eps=1e-05,
-                            momentum=0.1,
-                            affine=True,
-                            track_running_stats=True),
+                           eps=1e-05,
+                           momentum=0.1,
+                           affine=True,
+                           track_running_stats=True),
             nn.Dropout(p=w_dropout_2, inplace=False),
             nn.Linear(in_features=512, out_features=2, bias=False),
         )

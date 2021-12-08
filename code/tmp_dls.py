@@ -28,7 +28,13 @@ def make_dls_fov_diff_fv(stim_path, batch_sz=24, seed=0, test_prop=0.2):
 
     return dls
 
-def make_dls_abstract(root, batch_sz=24, seed=0, test_prop=0.2):
+
+def make_dls_abstract(root,
+                      get_img_tuple_func,
+                      batch_sz=24,
+                      seed=0,
+                      test_prop=0.2,
+                      shuffle=True):
 
     root = Path(root)
     cats = ['Cubies', 'Smoothies', 'Spikies']
@@ -77,7 +83,7 @@ def make_dls_abstract(root, batch_sz=24, seed=0, test_prop=0.2):
 
     siamese = DataBlock(
         blocks=(ImageTupleBlock, CategoryBlock),
-        get_items=get_tuples_abstract,
+        get_items=get_img_tuple_func,
         get_x=get_x,
         get_y=get_y,
         splitter=splitter,

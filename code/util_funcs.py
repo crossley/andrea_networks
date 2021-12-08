@@ -51,6 +51,7 @@ def make_dls(stim_path,
              seed=0,
              test_prop=0.2,
              shuffle=True):
+
     stim_path = Path(stim_path)
     pairs = glob.glob(os.path.join(stim_path, "*.png"))
     fnames = sorted(Path(s) for s in pairs)
@@ -86,6 +87,77 @@ def make_dls(stim_path,
     return dls
 
 
+def make_dls_abstract(root,
+                      get_img_tuple_func,
+                      batch_sz=24,
+                      seed=0,
+                      test_prop=0.2,
+                      shuffle=True):
+
+    root = Path(root)
+    cats = ['Cubies', 'Smoothies', 'Spikies']
+
+    dirs = [os.path.join(root, cat) for cat in cats]
+    stims = {
+        os.path.split(dir_)[1]: glob.glob(os.path.join(dir_, "*.jpg"))
+        for dir_ in dirs
+    }
+    n_stims = len(stims[cats[1]])
+
+    fnames1 = [stims[cat][i] for cat in stims for i in range(n_stims)] * 2
+
+    def shuffle_list(list_):
+        idxs1 = list(range(len(list_)))
+        idxs2 = list(range(len(list_)))
+        while sum([idxs1[i] == idxs2[i] for i in range(len(idxs1))]) > 0:
+            random.shuffle(idxs1)
+        return idxs1
+
+    fnames2 = [stims[cat][i] for cat in stims for i in range(n_stims)] + [
+        stims[cat][i] for cat in stims for i in shuffle_list(stims[cat])
+    ]
+    y = [fnames1[i] == fnames2[i] for i in range(len(fnames1))]
+
+    def calc_dist(pair):
+        dist = 0
+        file1 = os.path.basename(pair[0]).split('_')[1][:4]
+        file2 = os.path.basename(pair[1]).split('_')[1][:4]
+        for i in range(4):
+            dist += abs(int(file1[i]) - int(file2[i]))
+        return dist
+
+    # fnames = [[fnames1[i], fnames2[i]] for i in range(len(fnames1))
+    #           if calc_dist(pairs) > 5]
+    fnames = [[fnames1[i], fnames2[i]] for i in range(len(fnames1))
+              if calc_dist([fnames1[i], fnames2[i]]) > 5]
+
+    # TODO: need to pass fnames1 and fnames2 to make images
+    splitter = TrainTestSplitter(test_size=test_prop,
+                                 random_state=42,
+                                 shuffle=True,
+                                 stratify=y)
+
+    splits = splitter(fnames)
+
+    siamese = DataBlock(
+        blocks=(ImageTupleBlock, CategoryBlock),
+        get_items=get_img_tuple_func,
+        get_x=get_x,
+        get_y=get_y,
+        splitter=splitter,
+    )
+
+    dls = siamese.dataloaders(
+        fnames,
+        bs=batch_sz,
+        seed=seed,
+        shuffle=True,
+        device=defaults.device,
+    )
+
+    return dls
+
+
 def get_tuples(files):
     return [[
         get_img_tuple_func(f)[0],
@@ -113,7 +185,7 @@ def get_y(t):
     return t[3]
 
 
-def get_img_tuple_abstract(path):
+def get_img_tuple_fov_empty_abstract(path):
     img1 = Image.open(path[0])
     img2 = Image.open(path[1])
 
@@ -134,7 +206,7 @@ def get_img_tuple_abstract(path):
     )
 
 
-def get_img_tuple_abstract_fov_diff(path):
+def get_img_tuple_fov_diff_abstract(path):
     img1 = Image.open(path[0])
     img2 = Image.open(path[1])
 
@@ -169,7 +241,7 @@ def get_img_tuple_abstract_fov_diff(path):
     )
 
 
-def get_img_tuple_abstract_fov_same(path):
+def get_img_tuple_fov_same_abstract(path):
     img1 = Image.open(path[0])
     img2 = Image.open(path[1])
 
@@ -413,9 +485,8 @@ def plot_acc(tr_acc, te_acc, cycle, epoch, path=""):
     plt.show()
 
 
-def train_networks(nets, criterion, stim_path, batch_sz, cycles, epochs,
-                   lr_min, weight_decay, seed):
-    dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
+def train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
+                   weight_decay, seed):
     for net in nets:
         print(net.module.model_name)
         net.module.init_weights()
@@ -609,7 +680,7 @@ def inspect_features_fb(nets, stim_path, batch_sz, seed):
 
             net.load_state_dict(
                 torch.load('net_111' + net.module.model_name + '.pth',
-                        map_location=defaults.device))
+                           map_location=defaults.device))
             net = net.module.to('cpu')
             net_layer = net.fb
             net_layer_name = 'fb'
