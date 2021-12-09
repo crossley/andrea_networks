@@ -665,7 +665,8 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed):
     plt.close()
 
 
-def inspect_features_fb(nets, stim_path, batch_sz, seed):
+def inspect_features(nets, stim_path, batch_sz, seed):
+
     dls = make_dls(stim_path,
                    get_img_tuple_fov_empty,
                    batch_sz,
@@ -689,6 +690,7 @@ def inspect_features_fb(nets, stim_path, batch_sz, seed):
             y = np.hstack(y)
             print(X.shape, y.shape)
 
+            # learned weights on top row
             ax[1, 0].imshow(X[i, 0, :, :])
             ax[1, 1].imshow(X[i, 1, :, :])
             ax[1, 2].imshow(X[i, 2, :, :])
@@ -702,6 +704,7 @@ def inspect_features_fb(nets, stim_path, batch_sz, seed):
             y = np.hstack(y)
             print(X.shape, y.shape)
 
+            # init weights on bottom row
             ax[0, 0].imshow(X[i, 0, :, :])
             ax[0, 1].imshow(X[i, 1, :, :])
             ax[0, 2].imshow(X[i, 2, :, :])

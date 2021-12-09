@@ -14,7 +14,7 @@ class SiameseNet12(SiameseNet):
         super(SiameseNet12, self).__init__(w_dropout_1, w_dropout_2, 2)
 
         self.model_name = 'SiameseNet12'
-        
+
         self.fb = nn.Sequential(
             nn.Conv2d(128, 3, kernel_size=3, stride=1, padding=0),
             nn.ReLU(inplace=True),
@@ -37,11 +37,11 @@ class SiameseNet12(SiameseNet):
         v4_p2 = self.V4(v2_p2)
         vIT_p2 = self.IT(v4_p2)
 
-        # feedback from v1
         p_cat = torch.cat((v1_p1, v1_p2), 1)
         fb = self.fb(p_cat)
-        
-        m = nn.Upsample((fov_inp.size()[2], fov_inp.size()[3]), mode='bilinear')
+
+        m = nn.Upsample((fov_inp.size()[2], fov_inp.size()[3]),
+                        mode='bilinear')
         fb = m(fb)
 
         v1_fov = self.V1(fb + fov_inp)

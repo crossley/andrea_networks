@@ -48,5 +48,6 @@ from SiameseNet1 import *
 from SiameseNet12 import *
 from SiameseNet2 import *
 from SiameseNet22 import *
+from SiameseNet13 import *
 
 from util_train_nets import *

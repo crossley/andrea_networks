@@ -37,7 +37,6 @@ class SiameseNet2(SiameseNet):
         v4_p2 = self.V4(v2_p2)
         vIT_p2 = self.IT(v4_p2)
 
-        # feedback from IT
         p_cat = torch.cat((vIT_p1, vIT_p2), 1)
         fb = self.fb(p_cat)
 

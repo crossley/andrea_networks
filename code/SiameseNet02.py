@@ -31,7 +31,6 @@ class SiameseNet02(SiameseNet):
         v4_p2 = self.V4(v2_p2)
         vIT_p2 = self.IT(v4_p2)
 
-        # no feedback from periphery to fov in this model
         v1_fov = self.V1(fov_inp)
         v2_fov = self.V2(v1_fov)
         v4_fov = self.V4(v2_fov)

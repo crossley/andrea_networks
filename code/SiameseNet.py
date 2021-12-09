@@ -8,6 +8,26 @@ Created on Sun Nov 21 10:10:51 2021
 from imports import *
 
 
+# class CORblock_Z(nn.Module):
+#     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1):
+#         super().__init__()
+#         self.conv = nn.Conv2d(in_channels,
+#                               out_channels,
+#                               kernel_size=kernel_size,
+#                               stride=stride,
+#                               padding=kernel_size // 2)
+#         self.nonlin = nn.ReLU(inplace=True)
+#         self.pool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+#         self.output = Identity()
+
+#     def forward(self, inp):
+#         x = self.conv(inp)
+#         x = self.nonlin(x)
+#         x = self.pool(x)
+#         x = self.output(x)
+#         return x
+
+
 class SiameseNet(nn.Module):
     def __init__(self, w_dropout_1, w_dropout_2, head_mult):
         super(SiameseNet, self).__init__()
@@ -37,6 +57,11 @@ class SiameseNet(nn.Module):
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
         )
+
+        # self.V1 = CORblock_Z(3, 64, kernel_size=7, stride=2)
+        # self.V2 = CORblock_Z(64, 128)
+        # self.V4 = CORblock_Z(128, 256)
+        # self.IT = CORblock_Z(256, 512)
 
         self.head = nn.Sequential(
             AdaptiveConcatPool2d(),

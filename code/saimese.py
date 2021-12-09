@@ -24,8 +24,8 @@ if __name__ == '__main__':
 
     # stim_path = Path(r'D:\Andrea_NN\stimuli\no_transf')
     # stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
-    # stim_path = Path('../samediff_no-transf')
-    stim_path = Path('../abstract_stimuli/')
+    stim_path = Path('../samediff_no-transf')
+    # stim_path = Path('../abstract_stimuli/')
 
     epochs = 2
     cycles = 100
@@ -42,6 +42,7 @@ if __name__ == '__main__':
     net_02 = SiameseNet02(w_dropout_1, w_dropout_2)
     net_12 = SiameseNet12(w_dropout_1, w_dropout_2)
     net_22 = SiameseNet22(w_dropout_1, w_dropout_2)
+    net_13 = SiameseNet13(w_dropout_1, w_dropout_2)
 
     nets = [net_0, net_1, net_2, net_02, net_12, net_22]
     nets = [x.to(defaults.device) for x in nets]
@@ -50,9 +51,9 @@ if __name__ == '__main__':
     criterion = nn.CrossEntropyLoss()
 
     # NOTE: fmri stim training / testing
-    # dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
-    # train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
-    #                weight_decay, seed)
+    dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
+    train_networks([net_13], criterion, dls, batch_sz, cycles, epochs, lr_min,
+                   weight_decay, seed)
     # test_fov_img(nets, criterion, stim_path, batch_sz, seed)
     # test_noise(nets, criterion, stim_path, batch_sz, seed)
     # test_classify(nets[1:], criterion, stim_path, batch_sz, seed)
@@ -63,7 +64,7 @@ if __name__ == '__main__':
     # train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
     #                weight_decay, seed)
 
-    # inspect_features_fb(nets, stim_path, batch_sz, seed)
+    # inspect_features(nets[1:2], stim_path, batch_sz, seed)
 
 # TODO:
 # - what is get_img_tuple_fov_diff_fv?
