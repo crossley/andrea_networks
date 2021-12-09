@@ -7,7 +7,6 @@ Created on Sun Nov 21 10:10:51 2021
 
 from imports import *
 
-
 # class CORblock_Z(nn.Module):
 #     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1):
 #         super().__init__()
@@ -33,7 +32,7 @@ class SiameseNet(nn.Module):
         super(SiameseNet, self).__init__()
 
         self.head_mult = head_mult
-        
+
         self.V1_fov = nn.Sequential(
             nn.Conv2d(64, 64, kernel_size=7, stride=2, padding=7 // 2),
             nn.ReLU(inplace=True),
@@ -133,6 +132,12 @@ class SiameseNet(nn.Module):
         self.IT[0].weight.requires_grad = False
         self.IT[0].bias.requires_grad = False
 
+    def get_activation(name):
+        def hook(model, input, output):
+            activation[name] = output.detach()
+
+        return hook
+
     def train_net(self, optimizer, criterion, data_loader, cycles, epochs):
 
         net = self
@@ -140,6 +145,10 @@ class SiameseNet(nn.Module):
         test_loader = data_loader.valid
 
         stop_train_crit = 75.0
+
+        net_layer = net.module.fb
+        net_layer_name = 'fb'
+        handle = net_layer[0].register_forward_hook(get_activation(net_layer_name))
 
         for cycle in range(cycles):
             tr_loss = []
@@ -156,6 +165,7 @@ class SiameseNet(nn.Module):
                 for (inputs, labels) in train_loader:
                     optimizer.zero_grad()
                     out = net(inputs)
+                    print(activation['fb'])
                     _, pred = torch.max(out, 1)
                     loss = criterion(out, labels)
                     loss.backward()
@@ -193,10 +203,10 @@ class SiameseNet(nn.Module):
                           "{0:0.2f}".format(100 * te_correct / te_total),
                           "{0:0.2f}".format(end))
 
-            #     if te_acc[-1] >= stop_train_crit:
-            #         break
-            # if te_acc[-1] >= stop_train_crit:
-            #     break
+                if te_acc[-1] >= stop_train_crit:
+                    break
+            if te_acc[-1] >= stop_train_crit:
+                break
 
         return (tr_loss, tr_acc, te_loss, te_acc, cf_pred, cf_y)
 
