@@ -33,6 +33,12 @@ class SiameseNet(nn.Module):
         super(SiameseNet, self).__init__()
 
         self.head_mult = head_mult
+        
+        self.V1_fov = nn.Sequential(
+            nn.Conv2d(64, 64, kernel_size=7, stride=2, padding=7 // 2),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
+        )
 
         self.V1 = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=7 // 2),
@@ -187,10 +193,10 @@ class SiameseNet(nn.Module):
                           "{0:0.2f}".format(100 * te_correct / te_total),
                           "{0:0.2f}".format(end))
 
-                if te_acc[-1] >= stop_train_crit:
-                    break
-            if te_acc[-1] >= stop_train_crit:
-                break
+            #     if te_acc[-1] >= stop_train_crit:
+            #         break
+            # if te_acc[-1] >= stop_train_crit:
+            #     break
 
         return (tr_loss, tr_acc, te_loss, te_acc, cf_pred, cf_y)
 

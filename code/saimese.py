@@ -22,12 +22,11 @@ if __name__ == '__main__':
     np.random.seed(seed)
     torch.manual_seed(seed)
 
-    # stim_path = Path(r'D:\Andrea_NN\stimuli\no_transf')
-    # stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
-    stim_path = Path('../samediff_no-transf')
+    stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
+    # stim_path = Path('../samediff_no-transf')
     # stim_path = Path('../abstract_stimuli/')
 
-    epochs = 2
+    epochs = 100
     cycles = 100
     batch_sz = 24
     lr_min = 1e-4
@@ -44,9 +43,12 @@ if __name__ == '__main__':
     net_22 = SiameseNet22(w_dropout_1, w_dropout_2)
     net_13 = SiameseNet13(w_dropout_1, w_dropout_2)
 
-    nets = [net_0, net_1, net_2, net_02, net_12, net_22]
+    nets = [net_0, net_1, net_2, net_02, net_12, net_22, net_13]
     nets = [x.to(defaults.device) for x in nets]
     nets = [nn.DataParallel(x) for x in nets]
+    
+    net_13.to(defaults.device)
+    net_13 = nn.DataParallel(net_13)
 
     criterion = nn.CrossEntropyLoss()
 
