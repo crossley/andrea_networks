@@ -39,21 +39,19 @@ class SiameseNet13(SiameseNet):
 
         p_cat = torch.cat((v1_p1, v1_p2), 1)
         fb = self.fb(p_cat)
-        
-        m = nn.Upsample((fov_inp.size()[2], 
-                         fov_inp.size()[3]),
+
+        m = nn.Upsample((fov_inp.size()[2], fov_inp.size()[3]),
                         mode='bilinear')
         fb = m(fb)
-        
+
         v1_fov = torch.cat((fb, fov_inp), 1)
         v1_fov = self.V1_fov(v1_fov)
-        
+
         v2_fov = self.V2(v1_fov)
         v4_fov = self.V4(v2_fov)
         vIT_fov = self.IT(v4_fov)
-        
+
         out = torch.cat((vIT_p1, vIT_p2, vIT_fov), 1)
-        # out = torch.cat((vIT_p1, vIT_p2, torch.zeros_like(vIT_p1)), 1)
 
         out = self.head(out)
 

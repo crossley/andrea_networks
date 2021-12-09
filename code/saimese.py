@@ -46,7 +46,7 @@ if __name__ == '__main__':
     nets = [net_0, net_1, net_2, net_02, net_12, net_22, net_13]
     nets = [x.to(defaults.device) for x in nets]
     nets = [nn.DataParallel(x) for x in nets]
-    
+
     net_13.to(defaults.device)
     net_13 = nn.DataParallel(net_13)
 
