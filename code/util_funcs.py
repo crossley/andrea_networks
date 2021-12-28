@@ -673,12 +673,15 @@ def inspect_features(nets, stim_path, batch_sz, seed):
                    seed,
                    shuffle=False)
 
-    for i in range(3):
-        fig, ax = plt.subplots(3, 4, squeeze=False)
+    n_stim = 3
+    n_filts = 6
+    for i in range(n_stim):
+        fig, ax = plt.subplots(3, n_filts, squeeze=False)
 
         for net in nets:
             print(net.module.model_name)
 
+            # learned weights on top row
             net.load_state_dict(
                 torch.load('net_111' + net.module.model_name + '.pth',
                            map_location=defaults.device))
@@ -689,28 +692,10 @@ def inspect_features(nets, stim_path, batch_sz, seed):
             X = np.vstack(X)
             y = np.hstack(y)
             print(X.shape, y.shape)
-
-            # learned weights on top row
-            ax[0, 0].imshow(X[i, 0, :, :])
-            ax[0, 1].imshow(X[i, 1, :, :])
-            ax[0, 2].imshow(X[i, 2, :, :])
-            ax[0, 3].imshow(X[i, 3, :, :])
-
-            net.init_weights()
-            net.init_pretrained_weights()
-            net_layer = net.V1
-            net_layer_name = 'V1'
-            X, y = get_features(net, net_layer, net_layer_name, dls)
-            X = np.vstack(X)
-            y = np.hstack(y)
-            print(X.shape, y.shape)
+            for j in range(n_filts):
+                ax[0, j].imshow(X[i, j, :, :])
 
             # init with pretrain weights in middle row
-            ax[1, 0].imshow(X[i, 0, :, :])
-            ax[1, 1].imshow(X[i, 1, :, :])
-            ax[1, 2].imshow(X[i, 2, :, :])
-            ax[1, 3].imshow(X[i, 3, :, :])
-            
             net.init_weights()
             net.init_pretrained_weights()
             net_layer = net.V1
@@ -719,11 +704,19 @@ def inspect_features(nets, stim_path, batch_sz, seed):
             X = np.vstack(X)
             y = np.hstack(y)
             print(X.shape, y.shape)
+            for j in range(n_filts):
+                ax[1, j].imshow(X[i, j, :, :])
 
             # init weights on bottom row
-            ax[2, 0].imshow(X[i, 0, :, :])
-            ax[2, 1].imshow(X[i, 1, :, :])
-            ax[2, 2].imshow(X[i, 2, :, :])
-            ax[2, 3].imshow(X[i, 3, :, :])
+            net.init_weights()
+            net.init_pretrained_weights()
+            net_layer = net.V1
+            net_layer_name = 'V1'
+            X, y = get_features(net, net_layer, net_layer_name, dls)
+            X = np.vstack(X)
+            y = np.hstack(y)
+            print(X.shape, y.shape)
+            for j in range(n_filts):
+                ax[2, j].imshow(X[i, j, :, :])
 
             plt.show()
