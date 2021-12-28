@@ -40,6 +40,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.model_selection import StratifiedKFold
+import torchvision.transforms.functional as F
 
 from SiameseNet import *
 from SiameseNet0 import *

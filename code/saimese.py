@@ -26,8 +26,8 @@ if __name__ == '__main__':
     # stim_path = Path('../samediff_no-transf')
     # stim_path = Path('../abstract_stimuli/')
 
-    epochs = 100
-    cycles = 100
+    epochs = 5
+    cycles = 1
     batch_sz = 24
     lr_min = 1e-4
     weight_decay = 1e-3
@@ -53,12 +53,12 @@ if __name__ == '__main__':
     criterion = nn.CrossEntropyLoss()
 
    # NOTE: fmri stim training / testing
-    dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
-    train_networks([net_13], criterion, dls, batch_sz, cycles, epochs, lr_min,
-                   weight_decay, seed)
+    # dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
+    # train_networks([net_13], criterion, dls, batch_sz, cycles, epochs, lr_min,
+    #                 weight_decay, seed)
     # test_fov_img(nets, criterion, stim_path, batch_sz, seed)
     # test_noise(nets, criterion, stim_path, batch_sz, seed)
-    # test_classify(nets[1:], criterion, stim_path, batch_sz, seed)
+    # test_classify([net_13], criterion, stim_path, batch_sz, seed)
 
     # NOTE: abstract stim training / testing
     # dls = make_dls_abstract(stim_path, get_img_tuple_fov_empty_abstract,
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     # train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
     #                weight_decay, seed)
 
-    # inspect_features(nets[1:2], stim_path, batch_sz, seed)
+    inspect_features([net_13], stim_path, batch_sz, seed)
 
 # TODO:
 # - what is get_img_tuple_fov_diff_fv?

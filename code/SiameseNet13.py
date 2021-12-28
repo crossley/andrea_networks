@@ -46,7 +46,6 @@ class SiameseNet13(SiameseNet):
 
         v1_fov = torch.cat((fb, fov_inp), 1)
         v1_fov = self.V1_fov(v1_fov)
-
         v2_fov = self.V2(v1_fov)
         v4_fov = self.V4(v2_fov)
         vIT_fov = self.IT(v4_fov)
