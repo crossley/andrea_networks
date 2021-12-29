@@ -673,18 +673,22 @@ def inspect_features(nets, stim_path, batch_sz, seed):
                    seed,
                    shuffle=False)
 
-    n_stim = 3
-    n_filts = 6
+    n_stim = 1
+    n_filts = 10
     for i in range(n_stim):
-        fig, ax = plt.subplots(3, n_filts, squeeze=False)
+        fig, ax = plt.subplots(3, n_filts, squeeze=False, figsize=(10, 4))
 
         for net in nets:
             print(net.module.model_name)
 
             # learned weights on top row
-            net.load_state_dict(
-                torch.load('net_111' + net.module.model_name + '.pth',
-                           map_location=defaults.device))
+            state_dict = torch.load('net_111' + net.module.model_name + '.pth',
+                           map_location=defaults.device)
+            
+            print(state_dict.keys())
+            print(state_dict['module.V1.0.weight'].shape)
+            
+            net.load_state_dict(state_dict)
             net = net.module.to('cpu')
             net_layer = net.V1
             net_layer_name = 'V1'
@@ -697,7 +701,7 @@ def inspect_features(nets, stim_path, batch_sz, seed):
 
             # init with pretrain weights in middle row
             net.init_weights()
-            net.init_pretrained_weights()
+            net.init_pretrained_weights()                        
             net_layer = net.V1
             net_layer_name = 'V1'
             X, y = get_features(net, net_layer, net_layer_name, dls)
@@ -709,7 +713,7 @@ def inspect_features(nets, stim_path, batch_sz, seed):
 
             # init weights on bottom row
             net.init_weights()
-            net.init_pretrained_weights()
+            # net.init_pretrained_weights()                        
             net_layer = net.V1
             net_layer_name = 'V1'
             X, y = get_features(net, net_layer, net_layer_name, dls)
@@ -719,4 +723,7 @@ def inspect_features(nets, stim_path, batch_sz, seed):
             for j in range(n_filts):
                 ax[2, j].imshow(X[i, j, :, :])
 
+            [a.set_xticks([], []) for a in ax.flatten()]
+            [a.set_yticks([], []) for a in ax.flatten()]
+            # plt.tight_layout()
             plt.show()
