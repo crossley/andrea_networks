@@ -676,7 +676,7 @@ def inspect_features(nets, stim_path, batch_sz, seed):
     n_stim = 1
     n_filts = 10
     for i in range(n_stim):
-        fig, ax = plt.subplots(3, n_filts, squeeze=False, figsize=(10, 4))
+        # fig, ax = plt.subplots(3, n_filts, squeeze=False, figsize=(10, 4))
 
         for net in nets:
             print(net.module.model_name)
@@ -687,43 +687,51 @@ def inspect_features(nets, stim_path, batch_sz, seed):
 
             net.load_state_dict(state_dict)
             net = net.module.to('cpu')
+            
+            net.to(defaults.device)
+            net.eval()
+            with torch.no_grad():
+                for (inputs, labels) in dls[0]:
+                    out = net(inputs)
+                    print(net.feature_map_V1.shape)
+                    print(net.feature_map_V1)
 
-            net_layer = net.V1
-            net_layer_name = 'V1'
-            X, y = get_features(net, net_layer, net_layer_name, dls)
-            X = np.vstack(X)
-            y = np.hstack(y)
-            print(X.shape, y.shape)
-            for j in range(n_filts):
-                ax[0, j].imshow(X[i, j, :, :])
+            # net_layer = net.V1
+            # net_layer_name = 'V1'
+            # X, y = get_features(net, net_layer, net_layer_name, dls)
+            # X = np.vstack(X)
+            # y = np.hstack(y)
+            # print(X.shape, y.shape)
+            # for j in range(n_filts):
+            #     ax[0, j].imshow(X[i, j, :, :])
 
-            # init with pretrain weights in middle row
-            net.init_weights()
-            net.init_pretrained_weights()
-            net_layer = net.V1
-            net_layer_name = 'V1'
-            X, y = get_features(net, net_layer, net_layer_name, dls)
-            X = np.vstack(X)
-            y = np.hstack(y)
-            print(X.shape, y.shape)
-            for j in range(n_filts):
-                ax[1, j].imshow(X[i, j, :, :])
+            # # init with pretrain weights in middle row
+            # net.init_weights()
+            # net.init_pretrained_weights()
+            # net_layer = net.V1
+            # net_layer_name = 'V1'
+            # X, y = get_features(net, net_layer, net_layer_name, dls)
+            # X = np.vstack(X)
+            # y = np.hstack(y)
+            # print(X.shape, y.shape)
+            # for j in range(n_filts):
+            #     ax[1, j].imshow(X[i, j, :, :])
 
-            # init weights on bottom row
-            net.init_weights()
-            net_layer = net.V1
-            net_layer_name = 'V1'
-            X, y = get_features(net, net_layer, net_layer_name, dls)
-            X = np.vstack(X)
-            y = np.hstack(y)
-            print(X.shape, y.shape)
-            for j in range(n_filts):
-                ax[2, j].imshow(X[i, j, :, :])
+            # # init weights on bottom row
+            # net.init_weights()
+            # net_layer = net.V1
+            # net_layer_name = 'V1'
+            # X, y = get_features(net, net_layer, net_layer_name, dls)
+            # X = np.vstack(X)
+            # y = np.hstack(y)
+            # print(X.shape, y.shape)
+            # for j in range(n_filts):
+            #     ax[2, j].imshow(X[i, j, :, :])
 
-            [a.set_xticks([], []) for a in ax.flatten()]
-            [a.set_yticks([], []) for a in ax.flatten()]
-            # plt.tight_layout()
-            plt.show()
+            # [a.set_xticks([], []) for a in ax.flatten()]
+            # [a.set_yticks([], []) for a in ax.flatten()]
+            # # plt.tight_layout()
+            # plt.show()
 
 
 def inspect_weights(nets, stim_path, batch_sz, seed):
@@ -734,7 +742,7 @@ def inspect_weights(nets, stim_path, batch_sz, seed):
                    seed,
                    shuffle=False)
 
-    n_stim = 1
+    n_stim = 1 # NOTE: makes no sense in this function
     n_filts = 10
     net_layer_name = 'V1'
 
@@ -752,27 +760,31 @@ def inspect_weights(nets, stim_path, batch_sz, seed):
             net = net.module.to('cpu')
 
             X = state_dict['module.' + net_layer_name + '.0.weight']
+            X = X.cpu()
             print(X.shape)
             for j in range(n_filts):
-                ax[0, j].imshow(X[i, j, :, :])
+                ax[0, j].imshow(X[j, 2, :, :])
 
             # init with pretrain weights in middle row
             net.init_weights()
             net.init_pretrained_weights()
             state_dict = net.state_dict()
-            X = state_dict['module.' + net_layer_name + '.0.weight']
+            print(state_dict.keys())
+            X = state_dict[net_layer_name + '.0.weight']
+            X = X.cpu()
             print(X.shape)
             for j in range(n_filts):
-                ax[1, j].imshow(X[i, j, :, :])
+                ax[1, j].imshow(X[j, 2, :, :])
 
             # init weights on bottom row
             net.init_weights()
             net_layer = net.V1
             state_dict = net.state_dict()
-            X = state_dict['module.' + net_layer_name + '.0.weight']
+            X = state_dict[net_layer_name + '.0.weight']
+            X = X.cpu()
             print(X.shape)
             for j in range(n_filts):
-                ax[2, j].imshow(X[i, j, :, :])
+                ax[2, j].imshow(X[j, 2, :, :]) 
 
             [a.set_xticks([], []) for a in ax.flatten()]
             [a.set_yticks([], []) for a in ax.flatten()]

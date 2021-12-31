@@ -67,6 +67,7 @@ if __name__ == '__main__':
     #                weight_decay, seed)
 
     inspect_features([net_13], stim_path, batch_sz, seed)
+    # inspect_weights([net_13], stim_path, batch_sz, seed)
 
 # TODO:
 # - what is get_img_tuple_fov_diff_fv?

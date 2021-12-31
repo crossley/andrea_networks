@@ -32,6 +32,8 @@ class SiameseNet(nn.Module):
         super(SiameseNet, self).__init__()
 
         self.head_mult = head_mult
+        
+        # self.feature_map_V1 = torch.empty((64, 1, 1, 1))
 
         self.V1_fov = nn.Sequential(
             nn.Conv2d(64, 64, kernel_size=7, stride=2, padding=7 // 2),
