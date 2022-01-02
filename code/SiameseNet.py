@@ -32,8 +32,13 @@ class SiameseNet(nn.Module):
         super(SiameseNet, self).__init__()
 
         self.head_mult = head_mult
-        
-        # self.feature_map_V1 = torch.empty((64, 1, 1, 1))
+
+        self.feature_map_V1_fov = torch.empty((24, 64, 56, 56))
+        self.feature_map_fb = torch.empty((24, 61, 224, 224))
+        self.feature_map_V1 = torch.empty((24, 64, 56, 56))
+        self.feature_map_V2 = torch.empty((24, 64, 28, 28))
+        self.feature_map_V4 = torch.empty((24, 64, 14, 14))
+        self.feature_map_IT = torch.empty((24, 64, 7, 7))
 
         self.V1_fov = nn.Sequential(
             nn.Conv2d(64, 64, kernel_size=7, stride=2, padding=7 // 2),
@@ -141,26 +146,34 @@ class SiameseNet(nn.Module):
         test_loader = data_loader.valid
 
         stop_train_crit = 75.0
-        
+
         activation = {}
+
         def get_activation(name):
             def hook(model, input, output):
                 activation[name] = output.detach()
+
             return hook
-        
+
         def show(imgs):
             if not isinstance(imgs, list):
                 imgs = [imgs]
-            fix, axs = plt.subplots(ncols=len(imgs), squeeze=False, figsize=(10,10))
+            fix, axs = plt.subplots(ncols=len(imgs),
+                                    squeeze=False,
+                                    figsize=(10, 10))
             for i, img in enumerate(imgs):
                 img = img.detach()
                 img = F.to_pil_image(img)
                 axs[0, i].imshow(np.asarray(img))
-                axs[0, i].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
+                axs[0, i].set(xticklabels=[],
+                              yticklabels=[],
+                              xticks=[],
+                              yticks=[])
 
         net_layer = self.fb
         net_layer_name = 'fb'
-        handle = net_layer[0].register_forward_hook(get_activation(net_layer_name))
+        handle = net_layer[0].register_forward_hook(
+            get_activation(net_layer_name))
 
         for cycle in range(cycles):
             tr_loss = []
@@ -183,7 +196,7 @@ class SiameseNet(nn.Module):
                     optimizer.step()
                     tr_running_loss += loss.item()
                     tr_total += labels.size(0)
-                    tr_correct += (pred == labels).sum().item()                
+                    tr_correct += (pred == labels).sum().item()
                 tr_loss.append(tr_running_loss)
                 tr_acc.append(100 * tr_correct / tr_total)
 

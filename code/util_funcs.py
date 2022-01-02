@@ -673,28 +673,33 @@ def inspect_features(nets, stim_path, batch_sz, seed):
                    seed,
                    shuffle=False)
 
-    n_stim = 1
+    n_stim = 1 # NOTE: think about batch size
     n_filts = 10
     for i in range(n_stim):
-        # fig, ax = plt.subplots(3, n_filts, squeeze=False, figsize=(10, 4))
+        fig, ax = plt.subplots(3, n_filts, squeeze=False, figsize=(10, 4))
 
         for net in nets:
             print(net.module.model_name)
 
-            # learned weights on top row
-            state_dict = torch.load('net_111' + net.module.model_name + '.pth',
-                                    map_location=defaults.device)
+            # state_dict = torch.load('net_111' + net.module.model_name + '.pth',
+            #                         map_location=defaults.device)
+            # net.load_state_dict(state_dict)
 
-            net.load_state_dict(state_dict)
+            # net.init_weights()
+            # net.init_pretrained_weights()
+
             net = net.module.to('cpu')
-            
             net.to(defaults.device)
+
             net.eval()
             with torch.no_grad():
                 for (inputs, labels) in dls[0]:
                     out = net(inputs)
-                    print(net.feature_map_V1.shape)
-                    print(net.feature_map_V1)
+                    x = net.feature_map_V1
+                    for j in range(n_filts):
+                        ax[0, j].imshow(x[0, j, :, :])
+                    plt.show()
+                    break
 
             # net_layer = net.V1
             # net_layer_name = 'V1'
@@ -742,7 +747,7 @@ def inspect_weights(nets, stim_path, batch_sz, seed):
                    seed,
                    shuffle=False)
 
-    n_stim = 1 # NOTE: makes no sense in this function
+    n_stim = 1  # NOTE: makes no sense in this function
     n_filts = 10
     net_layer_name = 'V1'
 
@@ -784,7 +789,7 @@ def inspect_weights(nets, stim_path, batch_sz, seed):
             X = X.cpu()
             print(X.shape)
             for j in range(n_filts):
-                ax[2, j].imshow(X[j, 2, :, :]) 
+                ax[2, j].imshow(X[j, 2, :, :])
 
             [a.set_xticks([], []) for a in ax.flatten()]
             [a.set_yticks([], []) for a in ax.flatten()]

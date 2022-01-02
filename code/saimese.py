@@ -22,8 +22,8 @@ if __name__ == '__main__':
     np.random.seed(seed)
     torch.manual_seed(seed)
 
-    stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
-    # stim_path = Path('../samediff_no-transf')
+    # stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
+    stim_path = Path('../samediff_no-transf')
     # stim_path = Path('../abstract_stimuli/')
 
     epochs = 5
@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
     criterion = nn.CrossEntropyLoss()
 
-   # NOTE: fmri stim training / testing
+    # NOTE: fmri stim training / testing
     # dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
     # train_networks([net_13], criterion, dls, batch_sz, cycles, epochs, lr_min,
     #                 weight_decay, seed)

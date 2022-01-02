@@ -53,8 +53,12 @@ class SiameseNet13(SiameseNet):
         out = torch.cat((vIT_p1, vIT_p2, vIT_fov), 1)
 
         out = self.head(out)
-        
-        # self.feature_map_V1 = v1_p1
+
+        self.feature_map_V1 = v1_p1
+        self.feature_map_V2 = v2_p1
+        self.feature_map_V4 = v4_p1
+        self.feature_map_IT = vIT_p1
+
         # print(v1_fov.shape)
         # print(fb.shape)
         # print(v1_p1.shape)
