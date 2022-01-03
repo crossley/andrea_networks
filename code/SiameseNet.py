@@ -33,12 +33,23 @@ class SiameseNet(nn.Module):
 
         self.head_mult = head_mult
 
-        self.feature_map_V1_fov = torch.empty((24, 64, 56, 56))
+        # TODO: too many 64 below?
+        self.feature_map_inp = torch.empty((24, 3, 224, 224))
         self.feature_map_fb = torch.empty((24, 61, 224, 224))
+        self.feature_map_V1_fov = torch.empty((24, 64, 56, 56))
         self.feature_map_V1 = torch.empty((24, 64, 56, 56))
         self.feature_map_V2 = torch.empty((24, 64, 28, 28))
         self.feature_map_V4 = torch.empty((24, 64, 14, 14))
         self.feature_map_IT = torch.empty((24, 64, 7, 7))
+        self.feature_maps = {
+            'inp': self.feature_map_inp,
+            'V1_fov': self.feature_map_V1_fov,
+            'fb': self.feature_map_fb,
+            'V1': self.feature_map_V1,
+            'V2': self.feature_map_V2,
+            'V4': self.feature_map_V4,
+            'IT': self.feature_map_IT
+        }
 
         self.V1_fov = nn.Sequential(
             nn.Conv2d(64, 64, kernel_size=7, stride=2, padding=7 // 2),
@@ -129,6 +140,24 @@ class SiameseNet(nn.Module):
 
         self.load_state_dict(state_dict, strict=False)
 
+        # TODO: Is this right?
+        # TODO: Freeze just these weights (subset of layer)
+        print(state_dict['V1.0.weight'].shape)
+        print(self.state_dict()['V1_fov.0.weight'].shape)
+        self.state_dict(
+        )['V1_fov.0.weight'][:, 0:3, :, :] = state_dict['V1.0.weight']
+
+    def init_trained_weights(self):
+        state_dict = torch.load('net_111' + self.model_name + '.pth',
+                                map_location=defaults.device)
+
+        new_state_dict = OrderedDict()
+        for k, v in state_dict.items():
+            name = k.replace('module.', '')
+            new_state_dict[name] = v
+
+        self.load_state_dict(new_state_dict)
+
     def freeze_pretrained_weights(self):
         self.V1[0].weight.requires_grad = False
         self.V1[0].bias.requires_grad = False
@@ -208,6 +237,10 @@ class SiameseNet(nn.Module):
                 cf_y = []
                 with torch.no_grad():
                     for (inputs, labels) in test_loader:
+                        # TODO: better way of doing this?
+                        net.state_dict(
+                        )['V1_fov.0.weight'][:, 0:3, :, :] = state_dict[
+                            'V1.0.weight']
                         out = net(inputs)
                         # act_fb = activation['fb']
                         _, pred = torch.max(out, 1)

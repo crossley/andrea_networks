@@ -665,81 +665,17 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed):
     plt.close()
 
 
+# TODO: make minimum working example
 def inspect_features(nets, stim_path, batch_sz, seed):
 
-    dls = make_dls(stim_path,
-                   get_img_tuple_fov_empty,
-                   batch_sz,
-                   seed,
-                   shuffle=False)
-
-    n_stim = 1 # NOTE: think about batch size
-    n_filts = 10
-    for i in range(n_stim):
-        fig, ax = plt.subplots(3, n_filts, squeeze=False, figsize=(10, 4))
-
-        for net in nets:
-            print(net.module.model_name)
-
-            # state_dict = torch.load('net_111' + net.module.model_name + '.pth',
-            #                         map_location=defaults.device)
-            # net.load_state_dict(state_dict)
-
-            # net.init_weights()
-            # net.init_pretrained_weights()
-
-            net = net.module.to('cpu')
-            net.to(defaults.device)
-
-            net.eval()
-            with torch.no_grad():
-                for (inputs, labels) in dls[0]:
-                    out = net(inputs)
-                    x = net.feature_map_V1
-                    for j in range(n_filts):
-                        ax[0, j].imshow(x[0, j, :, :])
-                    plt.show()
-                    break
-
-            # net_layer = net.V1
-            # net_layer_name = 'V1'
-            # X, y = get_features(net, net_layer, net_layer_name, dls)
-            # X = np.vstack(X)
-            # y = np.hstack(y)
-            # print(X.shape, y.shape)
-            # for j in range(n_filts):
-            #     ax[0, j].imshow(X[i, j, :, :])
-
-            # # init with pretrain weights in middle row
-            # net.init_weights()
-            # net.init_pretrained_weights()
-            # net_layer = net.V1
-            # net_layer_name = 'V1'
-            # X, y = get_features(net, net_layer, net_layer_name, dls)
-            # X = np.vstack(X)
-            # y = np.hstack(y)
-            # print(X.shape, y.shape)
-            # for j in range(n_filts):
-            #     ax[1, j].imshow(X[i, j, :, :])
-
-            # # init weights on bottom row
-            # net.init_weights()
-            # net_layer = net.V1
-            # net_layer_name = 'V1'
-            # X, y = get_features(net, net_layer, net_layer_name, dls)
-            # X = np.vstack(X)
-            # y = np.hstack(y)
-            # print(X.shape, y.shape)
-            # for j in range(n_filts):
-            #     ax[2, j].imshow(X[i, j, :, :])
-
-            # [a.set_xticks([], []) for a in ax.flatten()]
-            # [a.set_yticks([], []) for a in ax.flatten()]
-            # # plt.tight_layout()
-            # plt.show()
-
-
-def inspect_weights(nets, stim_path, batch_sz, seed):
+    epochs = 5
+    cycles = 1
+    batch_sz = 24
+    lr_min = 1e-4
+    weight_decay = 1e-3
+    w_dropout_1 = 0.8
+    w_dropout_2 = 0.8
+    test_prop = 0.2
 
     dls = make_dls(stim_path,
                    get_img_tuple_fov_empty,
@@ -747,51 +683,66 @@ def inspect_weights(nets, stim_path, batch_sz, seed):
                    seed,
                    shuffle=False)
 
-    n_stim = 1  # NOTE: makes no sense in this function
-    n_filts = 10
-    net_layer_name = 'V1'
+    def plot_features(w, x, title):
+        fig, ax = plt.subplots(4, 21, squeeze=False, figsize=(10, 4))
+        for j in range(20):
+            ax[0, j + 1].imshow(w[j, 0, :, :])
+            ax[1, j + 1].imshow(w[j, 1, :, :])
+            ax[2, j + 1].imshow(w[j, 2, :, :])
+            ax[3, j + 1].imshow(x[0, j, :, :])
+            ax[0, 0].imshow(net.feature_map_inp[0, 0, :, :])
+            ax[1, 0].imshow(net.feature_map_inp[0, 1, :, :])
+            ax[2, 0].imshow(net.feature_map_inp[0, 2, :, :])
+            ax[3, 0].imshow(net.feature_map_inp[:, 2, :, :].mean(0))
+        [a.set_xticks([]) for a in ax.flatten()]
+        [a.set_yticks([]) for a in ax.flatten()]
+        # ax[0, 0].set_ylabel('red channel')
+        # ax[1, 0].set_ylabel('blue channel')
+        # ax[2, 0].set_ylabel('green channel')
+        fig.suptitle(title)
+        plt.show()
 
-    for i in range(n_stim):
-        fig, ax = plt.subplots(3, n_filts, squeeze=False, figsize=(10, 4))
+    # select
+    w_name = 'V1_fov.0.weight'
+    x_key = 'V1_fov'
 
-        for net in nets:
-            print(net.module.model_name)
+    # random init
+    net = SiameseNet13(w_dropout_1, w_dropout_2)
+    net.init_weights()
+    state_dict = net.state_dict()
+    w = state_dict[w_name]
+    net.eval()
+    with torch.no_grad():
+        for (inputs, labels) in dls[0]:
+            out = net(inputs)
+            x = net.feature_maps[x_key]
+            plot_features(w, x, 'Random initial weights')
 
-            # learned weights on top row
-            state_dict = torch.load('net_111' + net.module.model_name + '.pth',
-                                    map_location=defaults.device)
+    # corenet preload
+    net = SiameseNet13(w_dropout_1, w_dropout_2)
+    net.init_weights()
+    net.init_pretrained_weights()
+    state_dict = net.state_dict()
+    w = state_dict[w_name]
+    net.eval()
+    with torch.no_grad():
+        for (inputs, labels) in dls[0]:
+            out = net(inputs)
+            x = net.feature_maps[x_key]
+            plot_features(w, x, 'Corenet pretrained weights')
 
-            net.load_state_dict(state_dict)
-            net = net.module.to('cpu')
-
-            X = state_dict['module.' + net_layer_name + '.0.weight']
-            X = X.cpu()
-            print(X.shape)
-            for j in range(n_filts):
-                ax[0, j].imshow(X[j, 2, :, :])
-
-            # init with pretrain weights in middle row
-            net.init_weights()
-            net.init_pretrained_weights()
-            state_dict = net.state_dict()
-            print(state_dict.keys())
-            X = state_dict[net_layer_name + '.0.weight']
-            X = X.cpu()
-            print(X.shape)
-            for j in range(n_filts):
-                ax[1, j].imshow(X[j, 2, :, :])
-
-            # init weights on bottom row
-            net.init_weights()
-            net_layer = net.V1
-            state_dict = net.state_dict()
-            X = state_dict[net_layer_name + '.0.weight']
-            X = X.cpu()
-            print(X.shape)
-            for j in range(n_filts):
-                ax[2, j].imshow(X[j, 2, :, :])
-
-            [a.set_xticks([], []) for a in ax.flatten()]
-            [a.set_yticks([], []) for a in ax.flatten()]
-            # plt.tight_layout()
-            plt.show()
+    # custom training
+    net = SiameseNet13(w_dropout_1, w_dropout_2)
+    net.init_weights()
+    net.init_pretrained_weights()
+    net = nn.DataParallel(net)
+    net.module.init_trained_weights()
+    net = net.module.to('cpu')
+    state_dict = net.state_dict()
+    w = state_dict[w_name]
+    net.eval()
+    with torch.no_grad():
+        for (inputs, labels) in dls[0]:
+            out = net(inputs)
+            x = net.feature_maps[x_key]
+            plot_features(w, x, 'Custom trained weights')

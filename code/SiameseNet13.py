@@ -44,8 +44,9 @@ class SiameseNet13(SiameseNet):
                         mode='bilinear')
         fb = m(fb)
 
-        v1_fov = torch.cat((fb, fov_inp), 1)
-        v1_fov = self.V1_fov(v1_fov)
+        v1_fov_input = torch.cat((fov_inp, fb), 1)
+
+        v1_fov = self.V1_fov(v1_fov_input)
         v2_fov = self.V2(v1_fov)
         v4_fov = self.V4(v2_fov)
         vIT_fov = self.IT(v4_fov)
@@ -54,11 +55,24 @@ class SiameseNet13(SiameseNet):
 
         out = self.head(out)
 
+        self.feature_map_inp = inp[0]
+        self.feature_map_V1_fov = v1_fov
+        self.feature_map_fb = fb
         self.feature_map_V1 = v1_p1
         self.feature_map_V2 = v2_p1
         self.feature_map_V4 = v4_p1
         self.feature_map_IT = vIT_p1
+        self.feature_maps = {
+            'inp': self.feature_map_inp,
+            'V1_fov': self.feature_map_V1_fov,
+            'fb': self.feature_map_fb,
+            'V1': self.feature_map_V1,
+            'V2': self.feature_map_V2,
+            'V4': self.feature_map_V4,
+            'IT': self.feature_map_IT
+        }
 
+        # print(inp[0].shape)
         # print(v1_fov.shape)
         # print(fb.shape)
         # print(v1_p1.shape)

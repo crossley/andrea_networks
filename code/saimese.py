@@ -23,8 +23,9 @@ if __name__ == '__main__':
     torch.manual_seed(seed)
 
     # stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
-    stim_path = Path('../samediff_no-transf')
+    # stim_path = Path('../samediff_no-transf')
     # stim_path = Path('../abstract_stimuli/')
+    stim_path = Path('../samediff_no-transf_tiny')
 
     epochs = 5
     cycles = 1
@@ -35,22 +36,22 @@ if __name__ == '__main__':
     w_dropout_2 = 0.8
     test_prop = 0.2
 
-    net_0 = SiameseNet0(w_dropout_1, w_dropout_2)
-    net_1 = SiameseNet1(w_dropout_1, w_dropout_2)
-    net_2 = SiameseNet2(w_dropout_1, w_dropout_2)
-    net_02 = SiameseNet02(w_dropout_1, w_dropout_2)
-    net_12 = SiameseNet12(w_dropout_1, w_dropout_2)
-    net_22 = SiameseNet22(w_dropout_1, w_dropout_2)
+    # net_0 = SiameseNet0(w_dropout_1, w_dropout_2)
+    # net_1 = SiameseNet1(w_dropout_1, w_dropout_2)
+    # net_2 = SiameseNet2(w_dropout_1, w_dropout_2)
+    # net_02 = SiameseNet02(w_dropout_1, w_dropout_2)
+    # net_12 = SiameseNet12(w_dropout_1, w_dropout_2)
+    # net_22 = SiameseNet22(w_dropout_1, w_dropout_2)
     net_13 = SiameseNet13(w_dropout_1, w_dropout_2)
 
-    nets = [net_0, net_1, net_2, net_02, net_12, net_22, net_13]
-    nets = [x.to(defaults.device) for x in nets]
-    nets = [nn.DataParallel(x) for x in nets]
+    # nets = [net_0, net_1, net_2, net_02, net_12, net_22, net_13]
+    # nets = [x.to(defaults.device) for x in nets]
+    # nets = [nn.DataParallel(x) for x in nets]
 
     net_13.to(defaults.device)
     net_13 = nn.DataParallel(net_13)
 
-    criterion = nn.CrossEntropyLoss()
+    # criterion = nn.CrossEntropyLoss()
 
     # NOTE: fmri stim training / testing
     # dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
@@ -66,8 +67,7 @@ if __name__ == '__main__':
     # train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
     #                weight_decay, seed)
 
-    inspect_features([net_13], stim_path, batch_sz, seed)
-    # inspect_weights([net_13], stim_path, batch_sz, seed)
+    inspect_features([], stim_path, batch_sz, seed)
 
 # TODO:
 # - what is get_img_tuple_fov_diff_fv?
