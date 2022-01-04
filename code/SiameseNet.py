@@ -158,34 +158,6 @@ class SiameseNet(nn.Module):
 
         stop_train_crit = 75.0
 
-        activation = {}
-
-        def get_activation(name):
-            def hook(model, input, output):
-                activation[name] = output.detach()
-
-            return hook
-
-        def show(imgs):
-            if not isinstance(imgs, list):
-                imgs = [imgs]
-            fix, axs = plt.subplots(ncols=len(imgs),
-                                    squeeze=False,
-                                    figsize=(10, 10))
-            for i, img in enumerate(imgs):
-                img = img.detach()
-                img = F.to_pil_image(img)
-                axs[0, i].imshow(np.asarray(img))
-                axs[0, i].set(xticklabels=[],
-                              yticklabels=[],
-                              xticks=[],
-                              yticks=[])
-
-        net_layer = self.fb
-        net_layer_name = 'fb'
-        handle = net_layer[0].register_forward_hook(
-            get_activation(net_layer_name))
-        
         state_dict_init = net.state_dict()
         # print(state_dict_init.keys())
 
@@ -196,6 +168,8 @@ class SiameseNet(nn.Module):
             te_acc = []
 
             for epoch in range(epochs):
+
+                # NOTE: Train epoch
                 net.train()
                 tr_running_loss = 0.0
                 tr_correct = 0
@@ -218,6 +192,7 @@ class SiameseNet(nn.Module):
                 tr_loss.append(tr_running_loss)
                 tr_acc.append(100 * tr_correct / tr_total)
 
+                # NOTE: Eval epoch
                 net.eval()
                 te_running_loss = 0.0
                 te_correct = 0
@@ -246,6 +221,12 @@ class SiameseNet(nn.Module):
                           "{0:0.2f}".format(100 * tr_correct / tr_total),
                           "{0:0.2f}".format(100 * te_correct / te_total),
                           "{0:0.2f}".format(end))
+
+                # NOTE: Inspect weights
+                w = net.state_dict()['V1_fov.0.weight']
+                print(type(w), w.shape)
+                grid = torchvision.utils.make_grid(w, padding=10)
+                show(grid)
 
             #     if te_acc[-1] >= stop_train_crit:
             #         break
