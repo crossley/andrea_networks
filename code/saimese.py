@@ -22,12 +22,12 @@ if __name__ == '__main__':
     np.random.seed(seed)
     torch.manual_seed(seed)
 
-    # stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
+    stim_path = Path(r'D:\Andrea_NN\stimuli\samediff')
     # stim_path = Path('../samediff_no-transf')
     # stim_path = Path('../abstract_stimuli/')
-    stim_path = Path('../samediff_no-transf_tiny')
+    # stim_path = Path('../samediff_no-transf_tiny')
 
-    epochs = 5
+    epochs = 10
     cycles = 1
     batch_sz = 24
     lr_min = 1e-4
@@ -52,11 +52,12 @@ if __name__ == '__main__':
     net_13 = nn.DataParallel(net_13)
 
     # criterion = nn.CrossEntropyLoss()
+    criterion = CrossEntropyLossFlat()
 
     # NOTE: fmri stim training / testing
-    # dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
-    # train_networks([net_13], criterion, dls, batch_sz, cycles, epochs, lr_min,
-    #                 weight_decay, seed)
+    dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
+    train_networks([net_13], criterion, dls, batch_sz, cycles, epochs, lr_min,
+                    weight_decay, seed)
     # test_fov_img(nets, criterion, stim_path, batch_sz, seed)
     # test_noise(nets, criterion, stim_path, batch_sz, seed)
     # test_classify([net_13], criterion, stim_path, batch_sz, seed)
@@ -67,7 +68,7 @@ if __name__ == '__main__':
     # train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
     #                weight_decay, seed)
 
-    inspect_features([], stim_path, batch_sz, seed)
+    inspect_features([net_13], stim_path, batch_sz, seed)
 
 # TODO:
 # - what is get_img_tuple_fov_diff_fv?

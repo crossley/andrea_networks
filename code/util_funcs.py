@@ -666,16 +666,7 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed):
 
 
 # TODO: make minimum working example
-def inspect_features(nets, stim_path, batch_sz, seed):
-
-    epochs = 5
-    cycles = 1
-    batch_sz = 24
-    lr_min = 1e-4
-    weight_decay = 1e-3
-    w_dropout_1 = 0.8
-    w_dropout_2 = 0.8
-    test_prop = 0.2
+def inspect_features(nets, stim_path, batch_sz, seed, w_dropout_1, w_dropout_2):
 
     dls = make_dls(stim_path,
                    get_img_tuple_fov_empty,
@@ -683,24 +674,18 @@ def inspect_features(nets, stim_path, batch_sz, seed):
                    seed,
                    shuffle=False)
 
-    def plot_features(w, x, title):
-        fig, ax = plt.subplots(4, 21, squeeze=False, figsize=(10, 4))
+    def plot_features(w, title):
+        fig, ax = plt.subplots(3, 20, squeeze=False, figsize=(10, 4))
         for j in range(20):
-            ax[0, j + 1].imshow(w[j, 0, :, :])
-            ax[1, j + 1].imshow(w[j, 1, :, :])
-            ax[2, j + 1].imshow(w[j, 2, :, :])
-            ax[3, j + 1].imshow(x[0, j, :, :])
-            ax[0, 0].imshow(net.feature_map_inp[0, 0, :, :])
-            ax[1, 0].imshow(net.feature_map_inp[0, 1, :, :])
-            ax[2, 0].imshow(net.feature_map_inp[0, 2, :, :])
-            ax[3, 0].imshow(net.feature_map_inp[:, 2, :, :].mean(0))
+            ax[0, j].imshow(w[j, 0, :, :])
+            ax[1, j].imshow(w[j, 1, :, :])
+            ax[2, j].imshow(w[j, 2, :, :])
         [a.set_xticks([]) for a in ax.flatten()]
         [a.set_yticks([]) for a in ax.flatten()]
-        # ax[0, 0].set_ylabel('red channel')
-        # ax[1, 0].set_ylabel('blue channel')
-        # ax[2, 0].set_ylabel('green channel')
         fig.suptitle(title)
         plt.show()
+        # grid = torchvision.utils.make_grid(act_fb, padding=10)
+        # show(grid)
 
     # select
     w_name = 'V1_fov.0.weight'
@@ -711,12 +696,13 @@ def inspect_features(nets, stim_path, batch_sz, seed):
     net.init_weights()
     state_dict = net.state_dict()
     w = state_dict[w_name]
+    net.to(defaults.device)
+    net = nn.DataParallel(net)
     net.eval()
     with torch.no_grad():
         for (inputs, labels) in dls[0]:
             out = net(inputs)
-            x = net.feature_maps[x_key]
-            plot_features(w, x, 'Random initial weights')
+            plot_features(w, 'Random initial weights')
 
     # corenet preload
     net = SiameseNet13(w_dropout_1, w_dropout_2)
@@ -724,12 +710,13 @@ def inspect_features(nets, stim_path, batch_sz, seed):
     net.init_pretrained_weights()
     state_dict = net.state_dict()
     w = state_dict[w_name]
+    net.to(defaults.device)
+    net = nn.DataParallel(net)
     net.eval()
     with torch.no_grad():
         for (inputs, labels) in dls[0]:
             out = net(inputs)
-            x = net.feature_maps[x_key]
-            plot_features(w, x, 'Corenet pretrained weights')
+            plot_features(w, 'Corenet pretrained weights')
 
     # custom training
     net = SiameseNet13(w_dropout_1, w_dropout_2)
@@ -740,9 +727,10 @@ def inspect_features(nets, stim_path, batch_sz, seed):
     net = net.module.to('cpu')
     state_dict = net.state_dict()
     w = state_dict[w_name]
+    net.to(defaults.device)
+    net = nn.DataParallel(net)
     net.eval()
     with torch.no_grad():
         for (inputs, labels) in dls[0]:
             out = net(inputs)
-            x = net.feature_maps[x_key]
-            plot_features(w, x, 'Custom trained weights')
+            plot_features(w, 'Custom trained weights')

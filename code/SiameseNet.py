@@ -33,24 +33,6 @@ class SiameseNet(nn.Module):
 
         self.head_mult = head_mult
 
-        # TODO: too many 64 below?
-        self.feature_map_inp = torch.empty((24, 3, 224, 224))
-        self.feature_map_fb = torch.empty((24, 61, 224, 224))
-        self.feature_map_V1_fov = torch.empty((24, 64, 56, 56))
-        self.feature_map_V1 = torch.empty((24, 64, 56, 56))
-        self.feature_map_V2 = torch.empty((24, 64, 28, 28))
-        self.feature_map_V4 = torch.empty((24, 64, 14, 14))
-        self.feature_map_IT = torch.empty((24, 64, 7, 7))
-        self.feature_maps = {
-            'inp': self.feature_map_inp,
-            'V1_fov': self.feature_map_V1_fov,
-            'fb': self.feature_map_fb,
-            'V1': self.feature_map_V1,
-            'V2': self.feature_map_V2,
-            'V4': self.feature_map_V4,
-            'IT': self.feature_map_IT
-        }
-
         self.V1_fov = nn.Sequential(
             nn.Conv2d(64, 64, kernel_size=7, stride=2, padding=7 // 2),
             nn.ReLU(inplace=True),
@@ -203,6 +185,9 @@ class SiameseNet(nn.Module):
         net_layer_name = 'fb'
         handle = net_layer[0].register_forward_hook(
             get_activation(net_layer_name))
+        
+        state_dict_init = net.state_dict()
+        # print(state_dict_init.keys())
 
         for cycle in range(cycles):
             tr_loss = []
@@ -217,6 +202,8 @@ class SiameseNet(nn.Module):
                 tr_total = 0
                 start = time.time()
                 for (inputs, labels) in train_loader:
+                    # TODO: better way of doing this?
+                    # net.state_dict()['V1_fov.0.weight'][:, 0:3, :, :] = state_dict_init['V1.0.weight']
                     optimizer.zero_grad()
                     out = net(inputs)
                     _, pred = torch.max(out, 1)
@@ -225,7 +212,9 @@ class SiameseNet(nn.Module):
                     optimizer.step()
                     tr_running_loss += loss.item()
                     tr_total += labels.size(0)
-                    tr_correct += (pred == labels).sum().item()
+                    pred = pred.cpu().numpy()
+                    labels = labels.cpu().numpy()
+                    tr_correct += np.equal(pred, labels).astype(int).sum()
                 tr_loss.append(tr_running_loss)
                 tr_acc.append(100 * tr_correct / tr_total)
 
@@ -237,19 +226,16 @@ class SiameseNet(nn.Module):
                 cf_y = []
                 with torch.no_grad():
                     for (inputs, labels) in test_loader:
-                        # TODO: better way of doing this?
-                        net.state_dict(
-                        )['V1_fov.0.weight'][:, 0:3, :, :] = state_dict[
-                            'V1.0.weight']
                         out = net(inputs)
-                        # act_fb = activation['fb']
                         _, pred = torch.max(out, 1)
                         loss = criterion(out, labels)
                         te_running_loss += loss.item()
                         te_total += labels.size(0)
-                        te_correct += (pred == labels).sum().item()
-                        cf_y += labels.cpu().detach().tolist()
-                        cf_pred += pred.cpu().detach().tolist()
+                        pred = pred.cpu().numpy()
+                        labels = labels.cpu().numpy()
+                        te_correct += np.equal(pred, labels).astype(int).sum()
+                        # cf_y += labels.cpu().detach().tolist()
+                        # cf_pred += pred.cpu().detach().tolist()
                     te_acc.append(100 * te_correct / te_total)
                     te_loss.append(te_running_loss)
                     end = time.time() - start
@@ -260,10 +246,6 @@ class SiameseNet(nn.Module):
                           "{0:0.2f}".format(100 * tr_correct / tr_total),
                           "{0:0.2f}".format(100 * te_correct / te_total),
                           "{0:0.2f}".format(end))
-                    # act_fb = torch.unbind(act_fb[0,:,:,:], 0)
-                    # act_fb = [x for x in act_fb]
-                    # grid = torchvision.utils.make_grid(act_fb, padding=10)
-                    # show(grid)
 
             #     if te_acc[-1] >= stop_train_crit:
             #         break
@@ -292,9 +274,11 @@ class SiameseNet(nn.Module):
                 loss = criterion(out, labels)
                 te_running_loss += loss.item()
                 te_total += labels.size(0)
-                te_correct += (pred == labels).sum().item()
-                cf_y += labels.cpu().detach().tolist()
-                cf_pred += pred.cpu().detach().tolist()
+                pred = pred.cpu().numpy()
+                labels = labels.cpu().numpy()
+                te_correct += np.equal(pred, labels).astype(int).sum()
+                # cf_y += labels.cpu().detach().tolist()
+                # cf_pred += pred.cpu().detach().tolist()
             te_acc.append(100 * te_correct / te_total)
             te_loss.append(te_running_loss)
             end = time.time() - start

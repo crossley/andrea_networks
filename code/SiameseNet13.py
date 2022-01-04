@@ -55,29 +55,4 @@ class SiameseNet13(SiameseNet):
 
         out = self.head(out)
 
-        self.feature_map_inp = inp[0]
-        self.feature_map_V1_fov = v1_fov
-        self.feature_map_fb = fb
-        self.feature_map_V1 = v1_p1
-        self.feature_map_V2 = v2_p1
-        self.feature_map_V4 = v4_p1
-        self.feature_map_IT = vIT_p1
-        self.feature_maps = {
-            'inp': self.feature_map_inp,
-            'V1_fov': self.feature_map_V1_fov,
-            'fb': self.feature_map_fb,
-            'V1': self.feature_map_V1,
-            'V2': self.feature_map_V2,
-            'V4': self.feature_map_V4,
-            'IT': self.feature_map_IT
-        }
-
-        # print(inp[0].shape)
-        # print(v1_fov.shape)
-        # print(fb.shape)
-        # print(v1_p1.shape)
-        # print(v2_p1.shape)
-        # print(v4_p1.shape)
-        # print(vIT_p1.shape)
-
         return out
