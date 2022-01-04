@@ -665,16 +665,9 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed):
     plt.close()
 
 
-def inspect_features(nets, stim_path, batch_sz, seed, w_dropout_1,
-                     w_dropout_2):
+def inspect_features(nets, dls):
 
-    dls = make_dls(stim_path,
-                   get_img_tuple_fov_empty,
-                   batch_sz,
-                   seed,
-                   shuffle=False)
-
-    def plot_features(w, title):
+    def plot_weights(w, title):
         fig, ax = plt.subplots(3, 20, squeeze=False, figsize=(10, 4))
         for j in range(20):
             ax[0, j].imshow(w[j, 0, :, :])
@@ -702,7 +695,7 @@ def inspect_features(nets, stim_path, batch_sz, seed, w_dropout_1,
     with torch.no_grad():
         for (inputs, labels) in dls[0]:
             out = net(inputs)
-            plot_features(w, 'Random initial weights')
+            plot_weights(w, 'Random initial weights')
 
     # corenet preload
     net = SiameseNet13(w_dropout_1, w_dropout_2)
@@ -716,7 +709,7 @@ def inspect_features(nets, stim_path, batch_sz, seed, w_dropout_1,
     with torch.no_grad():
         for (inputs, labels) in dls[0]:
             out = net(inputs)
-            plot_features(w, 'Corenet pretrained weights')
+            plot_weights(w, 'Corenet pretrained weights')
 
     # custom training
     net = SiameseNet13(w_dropout_1, w_dropout_2)
@@ -733,4 +726,4 @@ def inspect_features(nets, stim_path, batch_sz, seed, w_dropout_1,
     with torch.no_grad():
         for (inputs, labels) in dls[0]:
             out = net(inputs)
-            plot_features(w, 'Custom trained weights')
+            plot_weights(w, 'Custom trained weights')
