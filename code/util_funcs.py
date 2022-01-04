@@ -665,8 +665,8 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed):
     plt.close()
 
 
-# TODO: make minimum working example
-def inspect_features(nets, stim_path, batch_sz, seed, w_dropout_1, w_dropout_2):
+def inspect_features(nets, stim_path, batch_sz, seed, w_dropout_1,
+                     w_dropout_2):
 
     dls = make_dls(stim_path,
                    get_img_tuple_fov_empty,

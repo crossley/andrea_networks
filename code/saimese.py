@@ -57,7 +57,7 @@ if __name__ == '__main__':
     # NOTE: fmri stim training / testing
     dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
     train_networks([net_13], criterion, dls, batch_sz, cycles, epochs, lr_min,
-                    weight_decay, seed)
+                   weight_decay, seed)
     # test_fov_img(nets, criterion, stim_path, batch_sz, seed)
     # test_noise(nets, criterion, stim_path, batch_sz, seed)
     # test_classify([net_13], criterion, stim_path, batch_sz, seed)
