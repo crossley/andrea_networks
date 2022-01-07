@@ -122,13 +122,6 @@ class SiameseNet(nn.Module):
 
         self.load_state_dict(state_dict, strict=False)
 
-        # TODO: Is this right?
-        # TODO: Freeze just these weights (subset of layer)
-        print(state_dict['V1.0.weight'].shape)
-        print(self.state_dict()['V1_fov.0.weight'].shape)
-        self.state_dict(
-        )['V1_fov.0.weight'][:, 0:3, :, :] = state_dict['V1.0.weight']
-
     def init_trained_weights(self):
         state_dict = torch.load('net_111' + self.model_name + '.pth',
                                 map_location=defaults.device)
@@ -158,8 +151,7 @@ class SiameseNet(nn.Module):
 
         stop_train_crit = 75.0
 
-        state_dict_init = net.state_dict()
-        # print(state_dict_init.keys())
+        V1_init = net.state_dict()['V1.0.weight']
 
         for cycle in range(cycles):
             tr_loss = []
@@ -168,6 +160,10 @@ class SiameseNet(nn.Module):
             te_acc = []
 
             for epoch in range(epochs):
+                
+                # w_init = net.state_dict()['V1.0.weight'].cpu().numpy()
+                # w_init = net.state_dict()['V1_fov.0.weight'].cpu().numpy()
+                w_init = net.state_dict()['fb.0.weight'].cpu().numpy()
 
                 # NOTE: Train epoch
                 net.train()
@@ -176,8 +172,12 @@ class SiameseNet(nn.Module):
                 tr_total = 0
                 start = time.time()
                 for (inputs, labels) in train_loader:
-                    # TODO: better way of doing this?
-                    # net.state_dict()['V1_fov.0.weight'][:, 0:3, :, :] = state_dict_init['V1.0.weight']
+                    
+                    # inputs = [torch.randn_like(x) for x in inputs]
+                    # labels = torch.randint(0, 2, labels.shape).to(defaults.device)
+                    # print(labels)
+                    
+                    net.state_dict()['V1_fov.0.weight'][:, 0:3, :, :] = V1_init
                     optimizer.zero_grad()
                     out = net(inputs)
                     _, pred = torch.max(out, 1)
@@ -223,15 +223,29 @@ class SiameseNet(nn.Module):
                           "{0:0.2f}".format(end))
 
                 # NOTE: Inspect weights
-                w = net.state_dict()['V1_fov.0.weight']
-                print(type(w), w.shape)
-                grid = torchvision.utils.make_grid(w, padding=10)
-                show(grid)
+                # w = net.state_dict()['V1.0.weight'].cpu().numpy()
+                # w = net.state_dict()['V1_fov.0.weight'].cpu().numpy()
+                w = net.state_dict()['fb.0.weight'].cpu().numpy()
+                
+                # print(w.mean())
+                # print(w_init.mean())                
+                # print(w.shape)
+                
+                # nrow=10
+                # ncol=10
+                # fig, ax = plt.subplots(nrow, ncol, squeeze=False, figsize=(5, 5))
+                # for i in range(nrow):
+                #     for j in range(ncol):
+                #         ax[i, j].imshow(w[j, i, :, :])
+                # [a.set_xticks([]) for a in ax.flatten()]
+                # [a.set_yticks([]) for a in ax.flatten()]
+                # plt.subplots_adjust(hspace=0.0, wspace=0.0)
+                # plt.show()
 
-            #     if te_acc[-1] >= stop_train_crit:
-            #         break
-            # if te_acc[-1] >= stop_train_crit:
-            #     break
+                if te_acc[-1] >= stop_train_crit:
+                    break
+            if te_acc[-1] >= stop_train_crit:
+                break
 
         return (tr_loss, tr_acc, te_loss, te_acc, cf_pred, cf_y)
 

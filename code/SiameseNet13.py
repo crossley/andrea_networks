@@ -43,6 +43,45 @@ class SiameseNet13(SiameseNet):
         m = nn.Upsample((fov_inp.size()[2], fov_inp.size()[3]),
                         mode='bilinear')
         fb = m(fb)
+        
+        # x = fb.cpu().detach().numpy()
+        # print(x.shape)
+        # nrow=5
+        # ncol=5
+        # fig, ax = plt.subplots(nrow, ncol, squeeze=False, figsize=(10, 10))
+        # for i in range(nrow):
+        #     for j in range(ncol):
+        #         ax[i, j].imshow(x[0, i+j, :, :])
+        # [a.set_xticks([]) for a in ax.flatten()]
+        # [a.set_yticks([]) for a in ax.flatten()]
+        # plt.subplots_adjust(hspace=0.0, wspace=0.0)
+        # plt.show()
+        
+        # x = v1_p1.cpu().detach().numpy()
+        # print(x.shape)
+        # nrow=5
+        # ncol=5
+        # fig, ax = plt.subplots(nrow, ncol, squeeze=False, figsize=(10, 10))
+        # for i in range(nrow):
+        #     for j in range(ncol):
+        #         ax[i, j].imshow(x[0, i+j, :, :])
+        # [a.set_xticks([]) for a in ax.flatten()]
+        # [a.set_yticks([]) for a in ax.flatten()]
+        # plt.subplots_adjust(hspace=0.0, wspace=0.0)
+        # plt.show()
+        
+        # x = v1_p2.cpu().detach().numpy()
+        # print(x.shape)
+        # nrow=5
+        # ncol=5
+        # fig, ax = plt.subplots(nrow, ncol, squeeze=False, figsize=(10, 10))
+        # for i in range(nrow):
+        #     for j in range(ncol):
+        #         ax[i, j].imshow(x[0, i+j, :, :])
+        # [a.set_xticks([]) for a in ax.flatten()]
+        # [a.set_yticks([]) for a in ax.flatten()]
+        # plt.subplots_adjust(hspace=0.0, wspace=0.0)
+        # plt.show()
 
         v1_fov_input = torch.cat((fov_inp, fb), 1)
 
@@ -52,6 +91,7 @@ class SiameseNet13(SiameseNet):
         vIT_fov = self.IT(v4_fov)
 
         out = torch.cat((vIT_p1, vIT_p2, vIT_fov), 1)
+        # out = vIT_fov
 
         out = self.head(out)
 

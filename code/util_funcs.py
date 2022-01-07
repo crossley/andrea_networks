@@ -45,17 +45,39 @@ class ImageTuple(fastuple):
                           **kwargs)
 
 
+def label_func(path):
+    split_name = path.stem.split("_")
+    return 0 if split_name[-1] == split_name[-2] else 1
+
+
+def label_func_class(path):
+    split_name = path.stem.split("_")
+    if 'b' in split_name[-1]:
+        label = 1
+    elif 'c' in split_name[-1]:
+        label = 2
+    elif 'f' in split_name[-1]:
+        label = 3
+    elif 'm' in split_name[-1]:
+        label = 4
+    else:
+        print('error in class label')
+        label = 0
+    return label
+
+
 def make_dls(stim_path,
              get_img_tuple_func,
              batch_sz=24,
              seed=0,
              test_prop=0.2,
-             shuffle=True):
+             shuffle=True, 
+             lab_func=label_func):
 
     stim_path = Path(stim_path)
     pairs = glob.glob(os.path.join(stim_path, "*.png"))
     fnames = sorted(Path(s) for s in pairs)
-    y = [label_func(item) for item in fnames]
+    y = [lab_func(item) for item in fnames]
 
     splitter = TrainTestSplitter(test_size=test_prop,
                                  random_state=seed,
@@ -65,10 +87,10 @@ def make_dls(stim_path,
     siamese = DataBlock(
         blocks=(ImageTupleBlock, CategoryBlock),
         get_items=lambda f: [[
-            get_img_tuple_func(x)[0],
-            get_img_tuple_func(x)[1],
-            get_img_tuple_func(x)[2],
-            get_img_tuple_func(x)[3],
+            get_img_tuple_func(x, lab_func)[0],
+            get_img_tuple_func(x, lab_func)[1],
+            get_img_tuple_func(x, lab_func)[2],
+            get_img_tuple_func(x, lab_func)[3],
         ] for x in f],
         get_x=get_x,
         get_y=get_y,
@@ -172,11 +194,6 @@ def ImageTupleBlock():
                           batch_tfms=IntToFloatTensor)
 
 
-def label_func(path):
-    split_name = path.stem.split("_")
-    return 0 if split_name[-1] == split_name[-2] else 1
-
-
 def get_x(t):
     return t[:3]
 
@@ -269,7 +286,7 @@ def get_img_tuple_fov_same_abstract(path):
     )
 
 
-def get_img_tuple_fov_empty(path):
+def get_img_tuple_fov_empty(path, label_func=label_func):
     pair = Image.open(path)
 
     label = label_func(Path(path))
@@ -558,9 +575,9 @@ def test_fov_img(nets, criterion, stim_path, batch_sz, seed):
     dls_diff = make_dls(stim_path, get_img_tuple_fov_diff, batch_sz, seed)
     for net in nets:
         print(net.module.model_name)
-        net.load_state_dict(
-            torch.load('net_111' + net.module.model_name + '.pth',
-                       map_location=defaults.device))
+        state_dict = torch.load('net_111' + net.module.model_name + '.pth',
+                   map_location=defaults.device)
+        net.load_state_dict(state_dict)
 
         res_empty = net.module.test_net(criterion, dls_empty[1])
         res_same = net.module.test_net(criterion, dls_same[1])
@@ -614,7 +631,8 @@ def get_features(net, net_layer, net_layer_name, dls):
     net.to(defaults.device)
     net.eval()
     with torch.no_grad():
-        for (inputs, labels) in dls[0]:
+        for (inputs, labels) in dls[1]:
+            print(labels)
             out = net(inputs)
             X.append(activation[net_layer_name].to('cpu').numpy())
             y.append(labels.to('cpu').numpy())
@@ -625,24 +643,31 @@ def get_features(net, net_layer, net_layer_name, dls):
 def test_classify(nets, criterion, stim_path, batch_sz, seed):
 
     res = []
-    dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
+    dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed, 0.2, lab_func=label_func_class)
     for net in nets:
         print(net.module.model_name)
-        net.load_state_dict(
-            torch.load('net_111' + net.module.model_name + '.pth',
-                       map_location=defaults.device))
+        state_dict = torch.load('net_111' + net.module.model_name + '.pth',
+                   map_location=defaults.device)
+        net.load_state_dict(state_dict)
         net = net.module.to('cpu')
 
+        net_layer = net.V1_fov
+        net_layer_name = 'fov'
         X, y = get_features(net, net_layer, net_layer_name, dls)
+        # for i in range(3):
+        #     plt.imshow(X[i][0, 1, :, :])
+        #     plt.show()
         X = np.vstack(X)
         X = X.reshape(X.shape[0], -1)
         y = np.hstack(y)
+        print(np.unique(y))
 
         pipe = Pipeline([('scaler', StandardScaler()), ('svc', SVC())])
         skf = StratifiedKFold(n_splits=5)
 
         f = 0
         for train_index, test_index in skf.split(X, y):
+            print(f)
             f += 1
             X_train, X_test = X[train_index, :], X[test_index, :]
             y_train, y_test = y[train_index], y[test_index]
@@ -677,8 +702,6 @@ def inspect_features(nets, dls):
         [a.set_yticks([]) for a in ax.flatten()]
         fig.suptitle(title)
         plt.show()
-        # grid = torchvision.utils.make_grid(act_fb, padding=10)
-        # show(grid)
 
     # select
     w_name = 'V1_fov.0.weight'
