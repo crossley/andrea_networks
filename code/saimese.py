@@ -26,6 +26,7 @@ if __name__ == '__main__':
     # stim_path = Path('../samediff_no-transf')
     # stim_path = Path('../abstract_stimuli/')
     # stim_path = Path('../samediff_no-transf_tiny')
+    stim_path_abstract = Path('../abstract_stimuli')
 
     epochs = 25
     cycles = 1
@@ -62,14 +63,18 @@ if __name__ == '__main__':
     #                 weight_decay, seed)
     # test_fov_img(nets, criterion, stim_path, batch_sz, seed)
     # test_noise(nets, criterion, stim_path, batch_sz, seed)
-    test_classify(nets, criterion, stim_path, batch_sz, seed)
+    # test_classify(nets, criterion, stim_path, batch_sz, seed)
 
     # NOTE: abstract stim training / testing
-    # dls = make_dls_abstract(stim_path, get_img_tuple_fov_empty_abstract,
-    #                         batch_sz, seed)
+    dls = make_dls_abstract(stim_path_abstract, get_img_tuple_fov_empty_abstract,
+                            batch_sz, seed)
+    for (inputs, labels) in dls[1]:
+        print(labels)
+        print(inputs[0].shape)
     # train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
     #                weight_decay, seed)
 
+    # inspect weights / features
     # stim_path = Path('../samediff_no-transf_tiny')
     # dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
     # inspect_features(nets, dls)

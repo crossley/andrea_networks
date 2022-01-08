@@ -642,7 +642,6 @@ def get_features(net, net_layer, net_layer_name, dls):
 
 def test_classify(nets, criterion, stim_path, batch_sz, seed):
 
-    res = []
     dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed, 0.2, lab_func=label_func_class)
     for net in nets:
         print(net.module.model_name)
@@ -660,34 +659,44 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed):
         X = np.vstack(X)
         X = X.reshape(X.shape[0], -1)
         y = np.hstack(y)
-        print(np.unique(y))
+        
+        # TODO: test these to make sure they're correct
+        y_cb = y[np.isin(y, [1, 2])]
+        y_mf = y[np.isin(y, [3, 4])]
+        y_fv = y
+        y_fv[np.isin(y, [1, 2])] == 5
+        y_fv[np.isin(y, [3, 4])] == 6
+        y_all = y
 
         pipe = Pipeline([('scaler', StandardScaler()), ('svc', SVC())])
         skf = StratifiedKFold(n_splits=5)
 
-        f = 0
-        for train_index, test_index in skf.split(X, y):
-            print(f)
-            f += 1
-            X_train, X_test = X[train_index, :], X[test_index, :]
-            y_train, y_test = y[train_index], y[test_index]
-            pipe.fit(X_train, y_train)
-            acc = pipe.score(X_test, y_test)
+        y_dict = {'y_cb': y_cb, 'y_mf': y_mf, 'y_fv': y_fv, 'y_all': y_all}
+        for key, y in y_dict.items():
+            f = 0
+            res = []
+            for train_index, test_index in skf.split(X, y):
+                print(f)
+                f += 1
+                X_train, X_test = X[train_index, :], X[test_index, :]
+                y_train, y_test = y[train_index], y[test_index]
+                pipe.fit(X_train, y_train)
+                acc = pipe.score(X_test, y_test)
+    
+                res.append(
+                    pd.DataFrame({
+                        'net': net.model_name,
+                        'fold': f,
+                        'acc': acc
+                    },
+                                 index=[f]))
 
-            res.append(
-                pd.DataFrame({
-                    'net': net.model_name,
-                    'fold': f,
-                    'acc': acc
-                },
-                             index=[f]))
-
-    res = pd.concat(res)
-    res.to_csv('results_test_classify.csv')
-
-    sn.barplot(data=res, x='net', y='acc')
-    plt.savefig('results_test_classify.pdf')
-    plt.close()
+            res = pd.concat(res)
+            res.to_csv('results_test_classify_' + key + '.csv')
+        
+            sn.barplot(data=res, x='net', y='acc')
+            plt.savefig('results_test_classify_' + key + '.pdf')
+            plt.close()
 
 
 def inspect_features(nets, dls):
