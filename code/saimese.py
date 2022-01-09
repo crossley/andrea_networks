@@ -68,6 +68,9 @@ if __name__ == '__main__':
     # NOTE: abstract stim training / testing
     dls = make_dls_abstract(stim_path_abstract, get_img_tuple_fov_empty_abstract,
                             batch_sz, seed)
+                            
+    show_triplets(dls)
+    
     for (inputs, labels) in dls[1]:
         print(labels)
         print(inputs[0].shape)
