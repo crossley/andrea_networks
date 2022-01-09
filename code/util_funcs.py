@@ -20,7 +20,8 @@ class add_fov_noise(Transform):
         oo = []
         for i in range(len(o)):
             tmp = self.noise_mean + self.noise_sd * torch.randn(
-                o[i][0][2].size(), device=self.device)
+                o[i][0][2].size(), device=self.device
+            )
             tmp = TensorImage(tmp)
             oo.append((o[i][0].add((0, 0, tmp)), o[i][1]))
         return oo
@@ -36,13 +37,14 @@ class ImageTuple(fastuple):
 
     def show(self, ctx=None, **kwargs):
         t1, t2, t3 = self
-        if (not isinstance(t1, Tensor) or not isinstance(t2, Tensor)
-                or t1.shape != t2.shape):
+        if (
+            not isinstance(t1, Tensor)
+            or not isinstance(t2, Tensor)
+            or t1.shape != t2.shape
+        ):
             return ctx
         line = t1.new_zeros(t1.shape[0], t1.shape[1], 10)
-        return show_image(torch.cat([t1, line, t2, line, t3], dim=2),
-                          ctx=ctx,
-                          **kwargs)
+        return show_image(torch.cat([t1, line, t2, line, t3], dim=2), ctx=ctx, **kwargs)
 
 
 def label_func(path):
@@ -52,46 +54,50 @@ def label_func(path):
 
 def label_func_class(path):
     split_name = path.stem.split("_")
-    if 'b' in split_name[-1]:
+    if "b" in split_name[-1]:
         label = 1
-    elif 'c' in split_name[-1]:
+    elif "c" in split_name[-1]:
         label = 2
-    elif 'f' in split_name[-1]:
+    elif "f" in split_name[-1]:
         label = 3
-    elif 'm' in split_name[-1]:
+    elif "m" in split_name[-1]:
         label = 4
     else:
-        print('error in class label')
+        print("error in class label")
         label = 0
     return label
 
 
-def make_dls(stim_path,
-             get_img_tuple_func,
-             batch_sz=24,
-             seed=0,
-             test_prop=0.2,
-             shuffle=True, 
-             lab_func=label_func):
+def make_dls(
+    stim_path,
+    get_img_tuple_func,
+    batch_sz=24,
+    seed=0,
+    test_prop=0.2,
+    shuffle=True,
+    lab_func=label_func,
+):
 
     stim_path = Path(stim_path)
     pairs = glob.glob(os.path.join(stim_path, "*.png"))
     fnames = sorted(Path(s) for s in pairs)
     y = [lab_func(item) for item in fnames]
 
-    splitter = TrainTestSplitter(test_size=test_prop,
-                                 random_state=seed,
-                                 shuffle=True,
-                                 stratify=y)
+    splitter = TrainTestSplitter(
+        test_size=test_prop, random_state=seed, shuffle=True, stratify=y
+    )
 
     siamese = DataBlock(
         blocks=(ImageTupleBlock, CategoryBlock),
-        get_items=lambda f: [[
-            get_img_tuple_func(x, lab_func)[0],
-            get_img_tuple_func(x, lab_func)[1],
-            get_img_tuple_func(x, lab_func)[2],
-            get_img_tuple_func(x, lab_func)[3],
-        ] for x in f],
+        get_items=lambda f: [
+            [
+                get_img_tuple_func(x, lab_func)[0],
+                get_img_tuple_func(x, lab_func)[1],
+                get_img_tuple_func(x, lab_func)[2],
+                get_img_tuple_func(x, lab_func)[3],
+            ]
+            for x in f
+        ],
         get_x=get_x,
         get_y=get_y,
         splitter=splitter,
@@ -109,61 +115,84 @@ def make_dls(stim_path,
     return dls
 
 
-def make_dls_abstract(root,
-                      get_img_tuple_func,
-                      batch_sz=24,
-                      seed=0,
-                      test_prop=0.2,
-                      shuffle=True):
+def make_dls_abstract(
+    root, get_img_tuple_func, batch_sz=24, seed=0, test_prop=0.2, shuffle=True
+):
 
-    root = Path(root)
-    cats = ['Cubies', 'Smoothies', 'Spikies']
+    from itertools import permutations, combinations
 
-    dirs = [os.path.join(root, cat) for cat in cats]
-    stims = {
-        os.path.split(dir_)[1]: glob.glob(os.path.join(dir_, "*.jpg"))
-        for dir_ in dirs
-    }
-    n_stims = len(stims[cats[1]])
-
-    fnames1 = [stims[cat][i] for cat in stims for i in range(n_stims)] * 2
-
-    def shuffle_list(list_):
-        idxs1 = list(range(len(list_)))
-        idxs2 = list(range(len(list_)))
-        while sum([idxs1[i] == idxs2[i] for i in range(len(idxs1))]) > 0:
-            random.shuffle(idxs1)
-        return idxs1
-
-    fnames2 = [stims[cat][i] for cat in stims for i in range(n_stims)] + [
-        stims[cat][i] for cat in stims for i in shuffle_list(stims[cat])
-    ]
-    y = [fnames1[i] == fnames2[i] for i in range(len(fnames1))]
-
+    # func below calculate th distance (dissimilarity) between to stimuli [0:20]
     def calc_dist(pair):
         dist = 0
-        file1 = os.path.basename(pair[0]).split('_')[1][:4]
-        file2 = os.path.basename(pair[1]).split('_')[1][:4]
+        file1 = os.path.basename(pair[0]).split("_")[1][:4]
+        file2 = os.path.basename(pair[1]).split("_")[1][:4]
         for i in range(4):
             dist += abs(int(file1[i]) - int(file2[i]))
         return dist
 
-    # fnames = [[fnames1[i], fnames2[i]] for i in range(len(fnames1))
-    #           if calc_dist(pairs) > 5]
-    fnames = [[fnames1[i], fnames2[i]] for i in range(len(fnames1))
-              if calc_dist([fnames1[i], fnames2[i]]) > 5]
+    root = Path(root)
+    cats = ["Cubies", "Smoothies", "Spikies"]
 
-    # TODO: need to pass fnames1 and fnames2 to make images
-    splitter = TrainTestSplitter(test_size=test_prop,
-                                 random_state=42,
-                                 shuffle=True,
-                                 stratify=y)
+    dirs = sorted([os.path.join(root, cat) for cat in cats])
+
+    stims = {
+        os.path.split(dir_)[1]: sorted(glob.glob(os.path.join(dir_, "*.jpg")))
+        for dir_ in dirs
+    }
+
+    # n stimuli in each category
+    n_stims = len(stims[cats[1]])
+
+    # list of all the 'same trials' (same stimulus, same category)
+    same_trials = [
+        [stims[cat][i], stims[cat][i]] for cat in cats for i in range(n_stims)
+    ]
+
+    # list of 'diff' trials (diff stimulus, same category)
+    # here we build all the possible combinations indexes
+    # we calculate all r-length tuples, in sorted order, no repeated elements e.g., AB AC AD BC BD CD
+    diff_idxs = list(combinations(list(range(n_stims)), r=2))
+
+    # here we calculate the differences between each possible combination of stimuli
+    # only of one category, because the other categories will be the same
+    dists = [calc_dist([stims[cats[0]][i], stims[cats[0]][j]]) for i, j in diff_idxs]
+
+    # create list of all the possible pairs of stimuli
+    cubies = [(stims["Cubies"][i], stims["Cubies"][j]) for i, j in diff_idxs]
+    smoothies = [(stims["Smoothies"][i], stims["Smoothies"][j]) for i, j in diff_idxs]
+    spikies = [(stims["Spikies"][i], stims["Spikies"][j]) for i, j in diff_idxs]
+
+    # we zip pairs and distances, so we can select only first n stimuli (highest dist)
+    zipped = list(sorted(zip(dists, cubies, smoothies, spikies), reverse=True))
+    sliced = zipped[:n_stims]
+
+    # here we make the stimuli list (same AND different)
+    fnames = [
+        (Path(pair[0]), Path(pair[1]))
+        for item in sliced
+        for pair in item
+        if type(pair) is not int
+    ] + same_trials
+
+    y = [fname1 == fname2 for [fname1, fname2] in fnames]
+
+    splitter = TrainTestSplitter(
+        test_size=test_prop, random_state=42, shuffle=True, stratify=y
+    )
 
     splits = splitter(fnames)
 
     siamese = DataBlock(
         blocks=(ImageTupleBlock, CategoryBlock),
-        get_items=get_img_tuple_func,
+        get_items=lambda f: [
+            [
+                get_img_tuple_func(x)[0],
+                get_img_tuple_func(x)[1],
+                get_img_tuple_func(x)[2],
+                get_img_tuple_func(x)[3],
+            ]
+            for x in f
+        ],
         get_x=get_x,
         get_y=get_y,
         splitter=splitter,
@@ -181,17 +210,19 @@ def make_dls_abstract(root,
 
 
 def get_tuples(files):
-    return [[
-        get_img_tuple_func(f)[0],
-        get_img_tuple_func(f)[1],
-        get_img_tuple_func(f)[2],
-        get_img_tuple_func(f)[3],
-    ] for f in files]
+    return [
+        [
+            get_img_tuple_func(f)[0],
+            get_img_tuple_func(f)[1],
+            get_img_tuple_func(f)[2],
+            get_img_tuple_func(f)[3],
+        ]
+        for f in files
+    ]
 
 
 def ImageTupleBlock():
-    return TransformBlock(type_tfms=ImageTuple.create,
-                          batch_tfms=IntToFloatTensor)
+    return TransformBlock(type_tfms=ImageTuple.create, batch_tfms=IntToFloatTensor)
 
 
 def get_x(t):
@@ -210,9 +241,8 @@ def get_img_tuple_fov_empty_abstract(path):
         label = 0
     else:
         label = 1
-
-    im1 = img1.resize((224, 224))
-    im2 = img2.resize((224, 224))
+    im1 = img1.convert("RGB").resize((224, 224))
+    im2 = img2.convert("RGB").resize((224, 224))
     im3 = Image.new("RGB", (224, 224), (125, 125, 125))
 
     return (
@@ -228,15 +258,17 @@ def get_img_tuple_fov_diff_abstract(path):
     img2 = Image.open(path[1])
 
     img3_basename = os.path.basename(path[0])
-    cat = img3_basename.split('_')[0]
-    cats = ['rect', 'round', 'spiky']
+    cat = img3_basename.split("_")[0]
+    cats = ["rect", "round", "spiky"]
     cats.remove(cat)
-    new_id = f'{random.randint(0,5)}{random.randint(0,5)}{random.randint(0,5)}{random.randint(0,5)}'
-    img3_basename_new = cats[random.randint(
-        0, 1)] + '_' + new_id + img3_basename.split('_')[1][4:]
-    img3_path_split = os.path.join(
-        os.path.split(path[0])[0], img3_basename_new).split(os.sep)
-    img3_path_split[-2] = '*'
+    new_id = f"{random.randint(0,5)}{random.randint(0,5)}{random.randint(0,5)}{random.randint(0,5)}"
+    img3_basename_new = (
+        cats[random.randint(0, 1)] + "_" + new_id + img3_basename.split("_")[1][4:]
+    )
+    img3_path_split = os.path.join(os.path.split(path[0])[0], img3_basename_new).split(
+        os.sep
+    )
+    img3_path_split[-2] = "*"
     img3_path_split[0] = img3_path_split[0] + os.sep
     img3_path = glob.glob(os.path.join(*img3_path_split))[0]
     img3 = Image.open(img3_path)
@@ -245,10 +277,9 @@ def get_img_tuple_fov_diff_abstract(path):
         label = 0
     else:
         label = 1
-
-    im1 = img1.resize((224, 224))
-    im2 = img2.resize((224, 224))
-    im3 = img3.resize((224, 224))
+    im1 = img1.convert("RGB").resize((224, 224))
+    im2 = img2.convert("RGB").resize((224, 224))
+    im3 = img3.convert("RGB").resize((224, 224))
 
     return (
         ToTensor()(PILImage(im1)),
@@ -263,20 +294,19 @@ def get_img_tuple_fov_same_abstract(path):
     img2 = Image.open(path[1])
 
     img3_basename = os.path.basename(path[0])
-    new_id = f'{random.randint(0,5)}{random.randint(0,5)}{random.randint(0,5)}{random.randint(0,5)}'
-    img3_basename_new = img3_basename.split(
-        '_')[0] + '_' + new_id + img3_basename.split('_')[1][4:]
-    img3 = Image.open(
-        os.path.join(os.path.split(path[0])[0], img3_basename_new))
+    new_id = f"{random.randint(0,5)}{random.randint(0,5)}{random.randint(0,5)}{random.randint(0,5)}"
+    img3_basename_new = (
+        img3_basename.split("_")[0] + "_" + new_id + img3_basename.split("_")[1][4:]
+    )
+    img3 = Image.open(os.path.join(os.path.split(path[0])[0], img3_basename_new))
 
     if path[0] == path[1]:
         label = 0
     else:
         label = 1
-
-    im1 = img1.resize((224, 224))
-    im2 = img2.resize((224, 224))
-    im3 = img3.resize((224, 224))
+    im1 = img1.convert("RGB").resize((224, 224))
+    im2 = img2.convert("RGB").resize((224, 224))
+    im3 = img3.convert("RGB").resize((224, 224))
 
     return (
         ToTensor()(PILImage(im1)),
@@ -305,7 +335,6 @@ def get_img_tuple_fov_empty(path, label_func=label_func):
             width,
             height,
         )
-
     im1 = pair.crop((left1, top1, right1, bottom1)).resize((224, 224))
     im2 = pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
     im3 = Image.new("RGB", (224, 224), (125, 125, 125))
@@ -322,13 +351,13 @@ def get_img_tuple_fov_same(path):
     root = os.path.dirname(path)
 
     pair = Image.open(path)
-    pair_basename = os.path.basename(path).split('_')
+    pair_basename = os.path.basename(path).split("_")
 
     fov_cat = pair_basename[-2][0]  # b
-    fov_img_id = f'{fov_cat}{str(random.randint(1,30))}'  # b1
+    fov_img_id = f"{fov_cat}{str(random.randint(1,30))}"  # b1
     fov_basename = pair_basename[:-2]
-    fov_basename.extend([fov_img_id, fov_img_id + '.png'])
-    fov_basename = '_'.join(fov_basename)
+    fov_basename.extend([fov_img_id, fov_img_id + ".png"])
+    fov_basename = "_".join(fov_basename)
     fov_path = os.path.join(root, fov_basename)
     fov_pair = Image.open(fov_path)
 
@@ -348,7 +377,6 @@ def get_img_tuple_fov_same(path):
             width,
             height,
         )
-
     im1 = pair.crop((left1, top1, right1, bottom1)).resize((224, 224))
     im2 = pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
     im3 = fov_pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
@@ -365,17 +393,17 @@ def get_img_tuple_fov_diff(path):
     root = os.path.dirname(path)
 
     pair = Image.open(path)
-    pair_basename = os.path.basename(path).split('_')
+    pair_basename = os.path.basename(path).split("_")
     per_cat = pair_basename[-2][0]  # c
 
-    cats = ['b', 'c', 'f', 'm']
+    cats = ["b", "c", "f", "m"]
     cats.remove(per_cat)
 
     fov_cat = cats[random.randint(0, 2)]  # b
-    fov_img_id = f'{fov_cat}{str(random.randint(1,30))}'  # b1
+    fov_img_id = f"{fov_cat}{str(random.randint(1,30))}"  # b1
     fov_basename = pair_basename[:-2]
-    fov_basename.extend([fov_img_id, fov_img_id + '.png'])
-    fov_basename = '_'.join(fov_basename)
+    fov_basename.extend([fov_img_id, fov_img_id + ".png"])
+    fov_basename = "_".join(fov_basename)
     fov_path = os.path.join(root, fov_basename)
     fov_pair = Image.open(fov_path)
 
@@ -395,7 +423,6 @@ def get_img_tuple_fov_diff(path):
             width,
             height,
         )
-
     im1 = pair.crop((left1, top1, right1, bottom1)).resize((224, 224))
     im2 = pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
     im3 = fov_pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
@@ -412,23 +439,22 @@ def get_img_tuple_fov_diff_fv(path):
     root = os.path.dirname(path)
 
     pair = Image.open(path)
-    pair_basename = os.path.basename(path).split('_')
+    pair_basename = os.path.basename(path).split("_")
     per_cat = pair_basename[-2][0]  # c
 
-    cats = ['b', 'c', 'f', 'm']
+    cats = ["b", "c", "f", "m"]
 
-    if (per_cat == 'b') or (per_cat == 'c'):
-        cats.remove('b')
-        cats.remove('c')
+    if (per_cat == "b") or (per_cat == "c"):
+        cats.remove("b")
+        cats.remove("c")
     else:
-        cats.remove('f')
-        cats.remove('m')
-
+        cats.remove("f")
+        cats.remove("m")
     fov_cat = cats[random.randint(0, 1)]  # b
-    fov_img_id = f'{fov_cat}{str(random.randint(1,30))}'  # b1
+    fov_img_id = f"{fov_cat}{str(random.randint(1,30))}"  # b1
     fov_basename = pair_basename[:-2]
-    fov_basename.extend([fov_img_id, fov_img_id + '.png'])
-    fov_basename = '_'.join(fov_basename)
+    fov_basename.extend([fov_img_id, fov_img_id + ".png"])
+    fov_basename = "_".join(fov_basename)
     fov_path = os.path.join(root, fov_basename)
     fov_pair = Image.open(fov_path)
 
@@ -448,7 +474,6 @@ def get_img_tuple_fov_diff_fv(path):
             width,
             height,
         )
-
     im1 = pair.crop((left1, top1, right1, bottom1)).resize((224, 224))
     im2 = pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
     im3 = fov_pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
@@ -502,33 +527,35 @@ def plot_acc(tr_acc, te_acc, cycle, epoch, path=""):
     plt.show()
 
 
-def train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
-                   weight_decay, seed):
+def train_networks(
+    nets, criterion, dls, batch_sz, cycles, epochs, lr_min, weight_decay, seed
+):
     for net in nets:
         print(net.module.model_name)
         net.module.init_weights()
         net.module.init_pretrained_weights()
         net.module.freeze_pretrained_weights()
         params_to_update = net.parameters()
-        optimizer = optim.Adam(filter(lambda p: p.requires_grad,
-                                      params_to_update),
-                               lr=lr_min,
-                               weight_decay=weight_decay)
+        optimizer = optim.Adam(
+            filter(lambda p: p.requires_grad, params_to_update),
+            lr=lr_min,
+            weight_decay=weight_decay,
+        )
         res = net.module.train_net(optimizer, criterion, dls, cycles, epochs)
 
         (tr_loss, tr_acc, te_loss, te_acc, cf_pred, cf_y) = res
-        d = pd.DataFrame({
-            'net': net.module.model_name,
-            'tr_loss': tr_loss,
-            'tr_acc': tr_acc,
-            'te_loss': te_loss,
-            'te_acc': te_acc
-        })
+        d = pd.DataFrame(
+            {
+                "net": net.module.model_name,
+                "tr_loss": tr_loss,
+                "tr_acc": tr_acc,
+                "te_loss": te_loss,
+                "te_acc": te_acc,
+            }
+        )
 
-        torch.save(net.state_dict(),
-                   'net_111' + net.module.model_name + '.pth')
-
-    d.to_csv('results_train.csv')
+        torch.save(net.state_dict(), "net_111" + net.module.model_name + ".pth")
+    d.to_csv("results_train.csv")
 
 
 def test_noise(nets, criterion, stim_path, batch_sz, seed):
@@ -536,8 +563,8 @@ def test_noise(nets, criterion, stim_path, batch_sz, seed):
     noise_sd = np.linspace(0.0, 100.0, 25)
     for v in noise_sd:
         dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
-        dls.to('cpu')
-        dls.add_tfms([add_fov_noise(0, v, 'cpu')], 'before_batch', 'valid')
+        dls.to("cpu")
+        dls.add_tfms([add_fov_noise(0, v, "cpu")], "before_batch", "valid")
         dls.to(defaults.device)
         # dls.valid.show_batch()
         # plt.show()
@@ -546,21 +573,23 @@ def test_noise(nets, criterion, stim_path, batch_sz, seed):
         for net in nets:
             print(net.module.model_name)
             net.load_state_dict(
-                torch.load('net_111' + net.module.model_name + '.pth',
-                           map_location=defaults.device))
+                torch.load(
+                    "net_111" + net.module.model_name + ".pth",
+                    map_location=defaults.device,
+                )
+            )
             res = net.module.test_net(criterion, dls[1])
             (te_loss, te_acc, cf_pred, cf_y) = res
             d.append(
-                pd.DataFrame({
-                    'noise_sd': v,
-                    'net': net.module.model_name,
-                    'te_acc': te_acc
-                }))
+                pd.DataFrame(
+                    {"noise_sd": v, "net": net.module.model_name, "te_acc": te_acc}
+                )
+            )
     d = pd.concat(d)
-    d.to_csv('results_test_noise.csv')
+    d.to_csv("results_test_noise.csv")
 
-    sn.scatterplot(data=d, x='noise_sd', y='te_acc', hue='net')
-    plt.savefig('results_test_noise.pdf')
+    sn.scatterplot(data=d, x="noise_sd", y="te_acc", hue="net")
+    plt.savefig("results_test_noise.pdf")
     plt.close()
 
     return d
@@ -575,41 +604,51 @@ def test_fov_img(nets, criterion, stim_path, batch_sz, seed):
     dls_diff = make_dls(stim_path, get_img_tuple_fov_diff, batch_sz, seed)
     for net in nets:
         print(net.module.model_name)
-        state_dict = torch.load('net_111' + net.module.model_name + '.pth',
-                   map_location=defaults.device)
+        state_dict = torch.load(
+            "net_111" + net.module.model_name + ".pth", map_location=defaults.device
+        )
         net.load_state_dict(state_dict)
 
         res_empty = net.module.test_net(criterion, dls_empty[1])
         res_same = net.module.test_net(criterion, dls_same[1])
         res_diff = net.module.test_net(criterion, dls_diff[1])
         d_empty.append(
-            pd.DataFrame({
-                'condition': 'empty',
-                'net': net.module.model_name,
-                'te_acc': res_empty[1]
-            }))
+            pd.DataFrame(
+                {
+                    "condition": "empty",
+                    "net": net.module.model_name,
+                    "te_acc": res_empty[1],
+                }
+            )
+        )
         d_same.append(
-            pd.DataFrame({
-                'condition': 'same',
-                'net': net.module.model_name,
-                'te_acc': res_same[1]
-            }))
+            pd.DataFrame(
+                {
+                    "condition": "same",
+                    "net": net.module.model_name,
+                    "te_acc": res_same[1],
+                }
+            )
+        )
         d_diff.append(
-            pd.DataFrame({
-                'condition': 'diff',
-                'net': net.module.model_name,
-                'te_acc': res_diff[1]
-            }))
+            pd.DataFrame(
+                {
+                    "condition": "diff",
+                    "net": net.module.model_name,
+                    "te_acc": res_diff[1],
+                }
+            )
+        )
     d_empty = pd.concat(d_empty)
     d_same = pd.concat(d_same)
     d_diff = pd.concat(d_diff)
     d = [d_empty, d_same, d_diff]
     d = pd.concat(d)
-    d.to_csv('results_test_fovimg.csv')
+    d.to_csv("results_test_fovimg.csv")
 
-    sn.barplot(data=d, x='net', y='te_acc', hue='condition')
+    sn.barplot(data=d, x="net", y="te_acc", hue="condition")
     plt.xticks(rotation=45)
-    plt.savefig('results_test_fovimg.pdf')
+    plt.savefig("results_test_fovimg.pdf")
     plt.close()
 
 
@@ -634,24 +673,31 @@ def get_features(net, net_layer, net_layer_name, dls):
         for (inputs, labels) in dls[1]:
             print(labels)
             out = net(inputs)
-            X.append(activation[net_layer_name].to('cpu').numpy())
-            y.append(labels.to('cpu').numpy())
-
+            X.append(activation[net_layer_name].to("cpu").numpy())
+            y.append(labels.to("cpu").numpy())
     return X, y
 
 
 def test_classify(nets, criterion, stim_path, batch_sz, seed):
 
-    dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed, 0.2, lab_func=label_func_class)
+    dls = make_dls(
+        stim_path,
+        get_img_tuple_fov_empty,
+        batch_sz,
+        seed,
+        0.2,
+        lab_func=label_func_class,
+    )
     for net in nets:
         print(net.module.model_name)
-        state_dict = torch.load('net_111' + net.module.model_name + '.pth',
-                   map_location=defaults.device)
+        state_dict = torch.load(
+            "net_111" + net.module.model_name + ".pth", map_location=defaults.device
+        )
         net.load_state_dict(state_dict)
-        net = net.module.to('cpu')
+        net = net.module.to("cpu")
 
         net_layer = net.V1_fov
-        net_layer_name = 'fov'
+        net_layer_name = "fov"
         X, y = get_features(net, net_layer, net_layer_name, dls)
         # for i in range(3):
         #     plt.imshow(X[i][0, 1, :, :])
@@ -659,7 +705,7 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed):
         X = np.vstack(X)
         X = X.reshape(X.shape[0], -1)
         y = np.hstack(y)
-        
+
         # TODO: test these to make sure they're correct
         y_cb = y[np.isin(y, [1, 2])]
         y_mf = y[np.isin(y, [3, 4])]
@@ -668,10 +714,10 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed):
         y_fv[np.isin(y, [3, 4])] == 6
         y_all = y
 
-        pipe = Pipeline([('scaler', StandardScaler()), ('svc', SVC())])
+        pipe = Pipeline([("scaler", StandardScaler()), ("svc", SVC())])
         skf = StratifiedKFold(n_splits=5)
 
-        y_dict = {'y_cb': y_cb, 'y_mf': y_mf, 'y_fv': y_fv, 'y_all': y_all}
+        y_dict = {"y_cb": y_cb, "y_mf": y_mf, "y_fv": y_fv, "y_all": y_all}
         for key, y in y_dict.items():
             f = 0
             res = []
@@ -682,25 +728,21 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed):
                 y_train, y_test = y[train_index], y[test_index]
                 pipe.fit(X_train, y_train)
                 acc = pipe.score(X_test, y_test)
-    
-                res.append(
-                    pd.DataFrame({
-                        'net': net.model_name,
-                        'fold': f,
-                        'acc': acc
-                    },
-                                 index=[f]))
 
+                res.append(
+                    pd.DataFrame(
+                        {"net": net.model_name, "fold": f, "acc": acc}, index=[f]
+                    )
+                )
             res = pd.concat(res)
-            res.to_csv('results_test_classify_' + key + '.csv')
-        
-            sn.barplot(data=res, x='net', y='acc')
-            plt.savefig('results_test_classify_' + key + '.pdf')
+            res.to_csv("results_test_classify_" + key + ".csv")
+
+            sn.barplot(data=res, x="net", y="acc")
+            plt.savefig("results_test_classify_" + key + ".pdf")
             plt.close()
 
 
 def inspect_features(nets, dls):
-
     def plot_weights(w, title):
         fig, ax = plt.subplots(3, 20, squeeze=False, figsize=(10, 4))
         for j in range(20):
@@ -713,8 +755,8 @@ def inspect_features(nets, dls):
         plt.show()
 
     # select
-    w_name = 'V1_fov.0.weight'
-    x_key = 'V1_fov'
+    w_name = "V1_fov.0.weight"
+    x_key = "V1_fov"
 
     # random init
     net = SiameseNet13(w_dropout_1, w_dropout_2)
@@ -727,8 +769,7 @@ def inspect_features(nets, dls):
     with torch.no_grad():
         for (inputs, labels) in dls[0]:
             out = net(inputs)
-            plot_weights(w, 'Random initial weights')
-
+            plot_weights(w, "Random initial weights")
     # corenet preload
     net = SiameseNet13(w_dropout_1, w_dropout_2)
     net.init_weights()
@@ -741,15 +782,14 @@ def inspect_features(nets, dls):
     with torch.no_grad():
         for (inputs, labels) in dls[0]:
             out = net(inputs)
-            plot_weights(w, 'Corenet pretrained weights')
-
+            plot_weights(w, "Corenet pretrained weights")
     # custom training
     net = SiameseNet13(w_dropout_1, w_dropout_2)
     net.init_weights()
     net.init_pretrained_weights()
     net = nn.DataParallel(net)
     net.module.init_trained_weights()
-    net = net.module.to('cpu')
+    net = net.module.to("cpu")
     state_dict = net.state_dict()
     w = state_dict[w_name]
     net.to(defaults.device)
@@ -758,4 +798,22 @@ def inspect_features(nets, dls):
     with torch.no_grad():
         for (inputs, labels) in dls[0]:
             out = net(inputs)
-            plot_weights(w, 'Custom trained weights')
+            plot_weights(w, "Custom trained weights")
+
+
+def show_triplets(dls):
+    print("Showing triplets from the first batch...")
+    batch = dls.one_batch()
+    for i in range(len(batch[0][0])):
+        im1 = batch[0][0][i]
+        im2 = batch[0][1][i]
+        im3 = batch[0][2][i]
+
+        imgs = torch.cat([im1, im2, im3], dim=2)
+
+        y = batch[1][i].item()
+        if y == 0:
+            label = str(i) + " - Same"
+        else:
+            label = str(i) + " - Different"
+        show_image(imgs, title=y)
