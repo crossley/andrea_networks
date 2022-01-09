@@ -528,7 +528,7 @@ def plot_acc(tr_acc, te_acc, cycle, epoch, path=""):
 
 
 def train_networks(
-    nets, criterion, dls, batch_sz, cycles, epochs, lr_min, weight_decay, seed
+    nets, criterion, dls, batch_sz, cycles, epochs, lr_min, weight_decay, seed, condition
 ):
     for net in nets:
         print(net.module.model_name)
@@ -555,7 +555,7 @@ def train_networks(
         )
 
         torch.save(net.state_dict(), "net_111" + net.module.model_name + ".pth")
-    d.to_csv("results_train.csv")
+        d.to_csv("results_train_" + net.module.model_name + "_" + condition + ".csv")
 
 
 def test_noise(nets, criterion, stim_path, batch_sz, seed):
@@ -680,24 +680,16 @@ def get_features(net, net_layer, net_layer_name, dls):
 
 def test_classify(nets, criterion, stim_path, batch_sz, seed):
 
-    dls = make_dls(
-        stim_path,
-        get_img_tuple_fov_empty,
-        batch_sz,
-        seed,
-        0.2,
-        lab_func=label_func_class,
-    )
+    dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed, 0.2, lab_func=label_func_class)
     for net in nets:
         print(net.module.model_name)
-        state_dict = torch.load(
-            "net_111" + net.module.model_name + ".pth", map_location=defaults.device
-        )
+        state_dict = torch.load('net_111' + net.module.model_name + '.pth',
+                   map_location=defaults.device)
         net.load_state_dict(state_dict)
-        net = net.module.to("cpu")
+        net = net.module.to('cpu')
 
         net_layer = net.V1_fov
-        net_layer_name = "fov"
+        net_layer_name = 'fov'
         X, y = get_features(net, net_layer, net_layer_name, dls)
         # for i in range(3):
         #     plt.imshow(X[i][0, 1, :, :])
@@ -705,20 +697,44 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed):
         X = np.vstack(X)
         X = X.reshape(X.shape[0], -1)
         y = np.hstack(y)
-
+        
         # TODO: test these to make sure they're correct
-        y_cb = y[np.isin(y, [1, 2])]
-        y_mf = y[np.isin(y, [3, 4])]
-        y_fv = y
-        y_fv[np.isin(y, [1, 2])] == 5
-        y_fv[np.isin(y, [3, 4])] == 6
-        y_all = y
+        cb_mask = np.isin(y, [0, 1])
+        mf_mask = np.isin(y, [2, 3])
+        
+        print(np.unique(y))
 
-        pipe = Pipeline([("scaler", StandardScaler()), ("svc", SVC())])
+        y_all = y
+        y_cb = y[cb_mask]
+        y_mf = y[mf_mask]
+        y_fv = np.array(y)
+        y_fv[cb_mask] = 5
+        y_fv[mf_mask] = 6
+        
+        print(np.unique(y))
+        print(np.unique(y_cb))
+        print(np.unique(y_mf))
+        print(np.unique(y_fv))
+        print(np.unique(y_all))
+        
+        X_all = X
+        X_cb = X[cb_mask, :]
+        X_mf = X[mf_mask, :]
+        X_fv = X
+        
+        Xy_dict = {'cb': [X_cb, y_cb], 
+                   'mf': [X_mf, y_mf], 
+                   'fv': [X_fv, y_fv], 
+                   'all': [X_all, y_all]}
+
+        pipe = Pipeline([('scaler', StandardScaler()), ('svc', SVC())])
         skf = StratifiedKFold(n_splits=5)
 
-        y_dict = {"y_cb": y_cb, "y_mf": y_mf, "y_fv": y_fv, "y_all": y_all}
-        for key, y in y_dict.items():
+        
+        for key, Xy in Xy_dict.items():
+            X = Xy[0]
+            y = Xy[1]
+            
             f = 0
             res = []
             for train_index, test_index in skf.split(X, y):
@@ -728,17 +744,20 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed):
                 y_train, y_test = y[train_index], y[test_index]
                 pipe.fit(X_train, y_train)
                 acc = pipe.score(X_test, y_test)
-
+    
                 res.append(
-                    pd.DataFrame(
-                        {"net": net.model_name, "fold": f, "acc": acc}, index=[f]
-                    )
-                )
-            res = pd.concat(res)
-            res.to_csv("results_test_classify_" + key + ".csv")
+                    pd.DataFrame({
+                        'net': net.model_name,
+                        'fold': f,
+                        'acc': acc
+                    },
+                                 index=[f]))
 
-            sn.barplot(data=res, x="net", y="acc")
-            plt.savefig("results_test_classify_" + key + ".pdf")
+            res = pd.concat(res)
+            res.to_csv('results_test_classify_' + key + '.csv')
+        
+            sn.barplot(data=res, x='net', y='acc')
+            plt.savefig('results_test_classify_' + key + '.pdf')
             plt.close()
 
 

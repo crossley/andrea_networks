@@ -60,22 +60,16 @@ if __name__ == '__main__':
     # NOTE: fmri stim training / testing
     # dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
     # train_networks([net_13], criterion, dls, batch_sz, cycles, epochs, lr_min,
-    #                 weight_decay, seed)
+    #                 weight_decay, seed, 'real_stim')
     # test_fov_img(nets, criterion, stim_path, batch_sz, seed)
     # test_noise(nets, criterion, stim_path, batch_sz, seed)
     # test_classify(nets, criterion, stim_path, batch_sz, seed)
 
     # NOTE: abstract stim training / testing
     dls = make_dls_abstract(stim_path_abstract, get_img_tuple_fov_empty_abstract,
-                            batch_sz, seed)
-                            
-    show_triplets(dls)
-    
-    for (inputs, labels) in dls[1]:
-        print(labels)
-        print(inputs[0].shape)
-    # train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
-    #                weight_decay, seed)
+                            batch_sz, seed)                      
+    train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
+                    weight_decay, seed, 'abstract_stim')
 
     # inspect weights / features
     # stim_path = Path('../samediff_no-transf_tiny')
