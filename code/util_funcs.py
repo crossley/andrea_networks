@@ -208,6 +208,30 @@ def make_dls_abstract(
 
     return dls
 
+# TODO: implement this
+def make_dls_imagenet():
+    
+    transform_item=transforms.Compose([
+                              transforms.RandomResizedCrop(224),
+                              transforms.RandomHorizontalFlip(),
+                              transforms.ToTensor(),
+                                 ])
+     
+    path = Path(r'D:\Andrea_NN\data\IMAGENET\Compressed')
+     
+    dls = ImageDataLoaders.from_folder(
+        path=path,
+        valid='validation',           # val folder name
+        train='train',      # train folder name
+        device='cuda',
+        item_tfms=transform_item, # transforms to apply to an item
+        batch_tfms=Normalize.from_stats(*imagenet_stats), # transform to apply to the batch
+        seed=42,
+        bs=256,               # batch size
+        shuffle=True      # shuffle training DataLoader
+        )
+ 
+    # See https://docs.fast.ai/vision.data.html#ImageDataLoaders or https://docs.fast.ai/tutorial.imagenette.html for examples
 
 def get_tuples(files):
     return [
@@ -558,11 +582,15 @@ def train_networks(
         d.to_csv("results_train_" + net.module.model_name + "_" + condition + ".csv")
 
 
-def test_noise(nets, criterion, stim_path, batch_sz, seed):
+def test_noise(nets, criterion, stim_path, batch_sz, seed, condition):
     d = []
-    noise_sd = np.linspace(0.0, 100.0, 25)
+    noise_sd = np.linspace(0.0, 60.0, 25)
     for v in noise_sd:
-        dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
+        if condition == 'real_stim':
+            dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
+        elif condition == 'abstract_stim':
+            dls = make_dls_abstract(stim_path, get_img_tuple_fov_empty_abstract, batch_sz, seed)
+            
         dls.to("cpu")
         dls.add_tfms([add_fov_noise(0, v, "cpu")], "before_batch", "valid")
         dls.to(defaults.device)
@@ -586,22 +614,29 @@ def test_noise(nets, criterion, stim_path, batch_sz, seed):
                 )
             )
     d = pd.concat(d)
-    d.to_csv("results_test_noise.csv")
+    d.to_csv("results_test_noise_" + condition + ".csv")
 
     sn.scatterplot(data=d, x="noise_sd", y="te_acc", hue="net")
-    plt.savefig("results_test_noise.pdf")
+    plt.savefig("results_test_noise_" + condition + ".pdf")
     plt.close()
 
     return d
 
 
-def test_fov_img(nets, criterion, stim_path, batch_sz, seed):
+def test_fov_img(nets, criterion, stim_path, batch_sz, seed, condition):
     d_empty = []
     d_same = []
     d_diff = []
-    dls_empty = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
-    dls_same = make_dls(stim_path, get_img_tuple_fov_same, batch_sz, seed)
-    dls_diff = make_dls(stim_path, get_img_tuple_fov_diff, batch_sz, seed)
+    
+    if condition == 'real_stim':
+        dls_empty = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
+        dls_same = make_dls(stim_path, get_img_tuple_fov_same, batch_sz, seed)
+        dls_diff = make_dls(stim_path, get_img_tuple_fov_diff, batch_sz, seed)
+    elif condition == 'abstract_stim':
+        dls_empty = make_dls_abstract(stim_path, get_img_tuple_fov_empty_abstract, batch_sz, seed)
+        dls_same = make_dls_abstract(stim_path, get_img_tuple_fov_same_abstract, batch_sz, seed)
+        dls_diff = make_dls_abstract(stim_path, get_img_tuple_fov_diff_abstract, batch_sz, seed)
+    
     for net in nets:
         print(net.module.model_name)
         state_dict = torch.load(
@@ -644,11 +679,11 @@ def test_fov_img(nets, criterion, stim_path, batch_sz, seed):
     d_diff = pd.concat(d_diff)
     d = [d_empty, d_same, d_diff]
     d = pd.concat(d)
-    d.to_csv("results_test_fovimg.csv")
+    d.to_csv("results_test_fovimg_" + condition + ".csv")
 
     sn.barplot(data=d, x="net", y="te_acc", hue="condition")
     plt.xticks(rotation=45)
-    plt.savefig("results_test_fovimg.pdf")
+    plt.savefig("results_test_fovimg_" + condition + ".pdf")
     plt.close()
 
 
