@@ -43,7 +43,7 @@ class SiameseNet13(SiameseNet):
         m = nn.Upsample((fov_inp.size()[2], fov_inp.size()[3]),
                         mode='bilinear')
         fb = m(fb)
-        
+
         # x = fb.cpu().detach().numpy()
         # print(x.shape)
         # nrow=5
@@ -56,7 +56,7 @@ class SiameseNet13(SiameseNet):
         # [a.set_yticks([]) for a in ax.flatten()]
         # plt.subplots_adjust(hspace=0.0, wspace=0.0)
         # plt.show()
-        
+
         # x = v1_p1.cpu().detach().numpy()
         # print(x.shape)
         # nrow=5
@@ -69,7 +69,7 @@ class SiameseNet13(SiameseNet):
         # [a.set_yticks([]) for a in ax.flatten()]
         # plt.subplots_adjust(hspace=0.0, wspace=0.0)
         # plt.show()
-        
+
         # x = v1_p2.cpu().detach().numpy()
         # print(x.shape)
         # nrow=5

@@ -160,7 +160,7 @@ class SiameseNet(nn.Module):
             te_acc = []
 
             for epoch in range(epochs):
-                
+
                 # w_init = net.state_dict()['V1.0.weight'].cpu().numpy()
                 # w_init = net.state_dict()['V1_fov.0.weight'].cpu().numpy()
                 w_init = net.state_dict()['fb.0.weight'].cpu().numpy()
@@ -172,11 +172,11 @@ class SiameseNet(nn.Module):
                 tr_total = 0
                 start = time.time()
                 for (inputs, labels) in train_loader:
-                    
+
                     # inputs = [torch.randn_like(x) for x in inputs]
                     # labels = torch.randint(0, 2, labels.shape).to(defaults.device)
                     # print(labels)
-                    
+
                     net.state_dict()['V1_fov.0.weight'][:, 0:3, :, :] = V1_init
                     optimizer.zero_grad()
                     out = net(inputs)
@@ -226,11 +226,11 @@ class SiameseNet(nn.Module):
                 # w = net.state_dict()['V1.0.weight'].cpu().numpy()
                 # w = net.state_dict()['V1_fov.0.weight'].cpu().numpy()
                 w = net.state_dict()['fb.0.weight'].cpu().numpy()
-                
+
                 # print(w.mean())
-                # print(w_init.mean())                
+                # print(w_init.mean())
                 # print(w.shape)
-                
+
                 # nrow=10
                 # ncol=10
                 # fig, ax = plt.subplots(nrow, ncol, squeeze=False, figsize=(5, 5))
