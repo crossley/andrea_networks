@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
     net_13.to(defaults.device)
     net_13 = nn.DataParallel(net_13)
-    
+
     nets = [net_13]
 
     # criterion = nn.CrossEntropyLoss()
@@ -63,41 +63,19 @@ if __name__ == '__main__':
     #                 weight_decay, seed, 'real_stim')
     # test_fov_img(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
     # test_noise(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
-    # test_classify(nets, criterion, stim_path, batch_sz, seed)
+    # test_classify(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
 
     # NOTE: abstract stim training / testing
     # dls = make_dls_abstract(stim_path_abstract, get_img_tuple_fov_empty_abstract,
-    #                         batch_sz, seed)                      
+    #                         batch_sz, seed)
     # train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
     #                 weight_decay, seed, 'abstract_stim')
     # test_fov_img(nets, criterion, stim_path_abstract, batch_sz, seed, 'abstract_stim')
-    test_noise(nets, criterion, stim_path_abstract, batch_sz, seed, 'abstract_stim')
-    # test_classify(nets, criterion, stim_path, batch_sz, seed)
+    # test_noise(nets, criterion, stim_path_abstract, batch_sz, seed,
+    #            'abstract_stim')
+    test_classify(nets, criterion, stim_path_abstract, batch_sz, seed, 'abstract_stim')
 
     # inspect weights / features
     # stim_path = Path('../samediff_no-transf_tiny')
     # dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
     # inspect_features(nets, dls)
-
-# TODO:
-# - what is get_img_tuple_fov_diff_fv?
-# - what is this all about: 'need to pass fnames1 and fnames2 to make images
-
-# TODO:
-# - train on abstract stimuli
-# - sort out visualisations to inspect the effect of training
-# - Try different feedback architectures
-# - Deep net to fMRI mapping
-
-# TODO: Pour over these papers and test our model on anything appropriate
-# Weldon, K. B., Rich, A. N., Woolgar, A., & Williams, M. A. (2016). Disruption
-# of foveal space impairs discrimination of peripheral objects. Frontiers in
-# psychology, 7, 699.
-
-# Fan, X., Wang, L., Shao, H., Kersten, D., & He, S. (2016). Temporally flexible
-# feedback signal to foveal cortex for peripheral object recognition. Proceedings
-# of the National Academy of Sciences, 113(41), 11627-11632. Chicago
-
-# Yu, Q., & Shim, W. M. (2016). Modulating foveal representation can influence
-# visual discrimination in the periphery. Journal of Vision, 16(3), 15-15.
-# Chicago
