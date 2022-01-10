@@ -50,6 +50,15 @@ def label_func(path):
     return 0 if split_name[-1] == split_name[-2] else 1
 
 
+def label_func_abstract(path):
+    if path[0] == path[1]:
+        label = 0
+    else:
+        label = 1
+
+    return label
+
+
 def label_func_class(path):
     split_name = path.stem.split("_")
     if "b" in split_name[-1]:
@@ -60,6 +69,19 @@ def label_func_class(path):
         label = 3
     elif "m" in split_name[-1]:
         label = 4
+    else:
+        print("error in class label")
+        label = 0
+    return label
+
+
+def label_func_class_abstract(path):
+    if "rect" in path[0]:
+        label = 1
+    elif "round" in path[0]:
+        label = 2
+    elif "spiky" in path[0]:
+        label = 3
     else:
         print("error in class label")
         label = 0
@@ -116,9 +138,8 @@ def make_dls_abstract(root,
                       batch_sz=24,
                       seed=0,
                       test_prop=0.2,
-                      shuffle=True):
-
-    from itertools import permutations, combinations
+                      shuffle=True,
+                      lab_func=label_func_abstract):
 
     # func below calculate th distance (dissimilarity) between to stimuli [0:20]
     def calc_dist(pair):
@@ -184,10 +205,10 @@ def make_dls_abstract(root,
     siamese = DataBlock(
         blocks=(ImageTupleBlock, CategoryBlock),
         get_items=lambda f: [[
-            get_img_tuple_func(x)[0],
-            get_img_tuple_func(x)[1],
-            get_img_tuple_func(x)[2],
-            get_img_tuple_func(x)[3],
+            get_img_tuple_func(x, lab_func)[0],
+            get_img_tuple_func(x, lab_func)[1],
+            get_img_tuple_func(x, lab_func)[2],
+            get_img_tuple_func(x, lab_func)[3],
         ] for x in f],
         get_x=get_x,
         get_y=get_y,
@@ -254,14 +275,13 @@ def get_y(t):
     return t[3]
 
 
-def get_img_tuple_fov_empty_abstract(path):
+def get_img_tuple_fov_empty_abstract(path, label_func):
+
+    label = label_func(path)
+
     img1 = Image.open(path[0])
     img2 = Image.open(path[1])
 
-    if path[0] == path[1]:
-        label = 0
-    else:
-        label = 1
     im1 = img1.convert("RGB").resize((224, 224))
     im2 = img2.convert("RGB").resize((224, 224))
     im3 = Image.new("RGB", (224, 224), (125, 125, 125))
@@ -308,7 +328,8 @@ def get_img_tuple_fov_diff_abstract(path):
     )
 
 
-def get_img_tuple_fov_same_abstract(path):
+def get_img_tuple_fov_same_abstract(path,
+                                    label_func=label_func_class_abstract):
     img1 = Image.open(path[0])
     img2 = Image.open(path[1])
 
@@ -335,7 +356,7 @@ def get_img_tuple_fov_same_abstract(path):
     )
 
 
-def get_img_tuple_fov_empty(path, label_func=label_func):
+def get_img_tuple_fov_empty(path, label_func):
     pair = Image.open(path)
 
     label = label_func(Path(path))
@@ -419,57 +440,6 @@ def get_img_tuple_fov_diff(path):
     cats.remove(per_cat)
 
     fov_cat = cats[random.randint(0, 2)]  # b
-    fov_img_id = f"{fov_cat}{str(random.randint(1,30))}"  # b1
-    fov_basename = pair_basename[:-2]
-    fov_basename.extend([fov_img_id, fov_img_id + ".png"])
-    fov_basename = "_".join(fov_basename)
-    fov_path = os.path.join(root, fov_basename)
-    fov_pair = Image.open(fov_path)
-
-    label = label_func(Path(path))
-    orientation = os.path.basename(path).split("_")[-3]
-
-    width, height = pair.size
-
-    if orientation == "normal":
-        left1, top1, right1, bottom1 = width - width // 4, 0, width, height // 4
-        left2, top2, right2, bottom2 = 0, height - height // 4, width // 4, height
-    else:
-        left1, top1, right1, bottom1 = 0, 0, width // 4, height // 4
-        left2, top2, right2, bottom2 = (
-            width - width // 4,
-            height - height // 4,
-            width,
-            height,
-        )
-    im1 = pair.crop((left1, top1, right1, bottom1)).resize((224, 224))
-    im2 = pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
-    im3 = fov_pair.crop((left2, top2, right2, bottom2)).resize((224, 224))
-
-    return (
-        ToTensor()(PILImage(im1)),
-        ToTensor()(PILImage(im2)),
-        ToTensor()(PILImage(im3)),
-        label,
-    )
-
-
-def get_img_tuple_fov_diff_fv(path):
-    root = os.path.dirname(path)
-
-    pair = Image.open(path)
-    pair_basename = os.path.basename(path).split("_")
-    per_cat = pair_basename[-2][0]  # c
-
-    cats = ["b", "c", "f", "m"]
-
-    if (per_cat == "b") or (per_cat == "c"):
-        cats.remove("b")
-        cats.remove("c")
-    else:
-        cats.remove("f")
-        cats.remove("m")
-    fov_cat = cats[random.randint(0, 1)]  # b
     fov_img_id = f"{fov_cat}{str(random.randint(1,30))}"  # b1
     fov_basename = pair_basename[:-2]
     fov_basename.extend([fov_img_id, fov_img_id + ".png"])
@@ -722,7 +692,7 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed, condition):
                                 batch_sz,
                                 seed,
                                 0.2,
-                                lab_func=label_func_class)
+                                lab_func=label_func_class_abstract)
 
     for net in nets:
         print(net.module.model_name)
@@ -741,36 +711,42 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed, condition):
         X = X.reshape(X.shape[0], -1)
         y = np.hstack(y)
 
-        # TODO: test these to make sure they're correct
-        cb_mask = np.isin(y, [0, 1])
-        mf_mask = np.isin(y, [2, 3])
+        if condition == 'real_stim':
+            # TODO: test these to make sure they're correct
+            cb_mask = np.isin(y, [0, 1])
+            mf_mask = np.isin(y, [2, 3])
 
-        print(np.unique(y))
+            print(np.unique(y))
 
-        y_all = y
-        y_cb = y[cb_mask]
-        y_mf = y[mf_mask]
-        y_fv = np.array(y)
-        y_fv[cb_mask] = 5
-        y_fv[mf_mask] = 6
+            y_all = y
+            y_cb = y[cb_mask]
+            y_mf = y[mf_mask]
+            y_fv = np.array(y)
+            y_fv[cb_mask] = 5
+            y_fv[mf_mask] = 6
 
-        print(np.unique(y))
-        print(np.unique(y_cb))
-        print(np.unique(y_mf))
-        print(np.unique(y_fv))
-        print(np.unique(y_all))
+            print(np.unique(y))
+            print(np.unique(y_cb))
+            print(np.unique(y_mf))
+            print(np.unique(y_fv))
+            print(np.unique(y_all))
 
-        X_all = X
-        X_cb = X[cb_mask, :]
-        X_mf = X[mf_mask, :]
-        X_fv = X
+            X_all = X
+            X_cb = X[cb_mask, :]
+            X_mf = X[mf_mask, :]
+            X_fv = X
 
-        Xy_dict = {
-            'cb': [X_cb, y_cb],
-            'mf': [X_mf, y_mf],
-            'fv': [X_fv, y_fv],
-            'all': [X_all, y_all]
-        }
+            Xy_dict = {
+                'cb': [X_cb, y_cb],
+                'mf': [X_mf, y_mf],
+                'fv': [X_fv, y_fv],
+                'all': [X_all, y_all]
+            }
+
+        elif condition == 'abstract_stim':
+            Xy_dict = {
+                'all': [X, y],
+            }
 
         pipe = Pipeline([('scaler', StandardScaler()), ('svc', SVC())])
         skf = StratifiedKFold(n_splits=5)
@@ -805,6 +781,23 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed, condition):
             plt.savefig('results_test_classify_' + key + '_' + condition +
                         '.pdf')
             plt.close()
+
+
+def inspect_test_classify():
+    d_all = pd.read_csv('results_test_classify_all.csv')
+    d_cb = pd.read_csv('results_test_classify_cb.csv')
+    d_fv = pd.read_csv('results_test_classify_fv.csv')
+    d_mf = pd.read_csv('results_test_classify_mf.csv')
+
+    d_all['class'] = 'all'
+    d_all['class'] = 'all'
+    d_all['class'] = 'all'
+    d_all['class'] = 'all'
+
+    d_all['condition'] = 'real_stim'
+    d_all['condition'] = 'real_stim'
+    d_all['condition'] = 'real_stim'
+    d_all['condition'] = 'real_stim'
 
 
 def inspect_features(nets, dls):

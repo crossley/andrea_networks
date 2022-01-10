@@ -54,3 +54,4 @@ from SiameseNet13 import *
 from util_train_nets import *
 
 from collections import OrderedDict
+from itertools import permutations, combinations
