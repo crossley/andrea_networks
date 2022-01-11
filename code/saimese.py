@@ -64,6 +64,8 @@ if __name__ == '__main__':
     # test_fov_img(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
     # test_noise(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
     # test_classify(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
+    
+    inspect_test_classify()
 
     # NOTE: abstract stim training / testing
     # dls = make_dls_abstract(stim_path_abstract, get_img_tuple_fov_empty_abstract,

@@ -76,11 +76,11 @@ def label_func_class(path):
 
 
 def label_func_class_abstract(path):
-    if "rect" in path[0]:
+    if "rect" in str(path[0]):
         label = 1
-    elif "round" in path[0]:
+    elif "round" in str(path[0]):
         label = 2
-    elif "spiky" in path[0]:
+    elif "spiky" in str(path[0]):
         label = 3
     else:
         print("error in class label")
@@ -783,6 +783,14 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed, condition):
             plt.close()
 
 
+def inspect_test_fov_img():
+    pass
+
+
+def inspect_test_noise():
+    pass
+
+
 def inspect_test_classify():
     d_all = pd.read_csv('results_test_classify_all.csv')
     d_cb = pd.read_csv('results_test_classify_cb.csv')
@@ -790,14 +798,20 @@ def inspect_test_classify():
     d_mf = pd.read_csv('results_test_classify_mf.csv')
 
     d_all['class'] = 'all'
-    d_all['class'] = 'all'
-    d_all['class'] = 'all'
-    d_all['class'] = 'all'
+    d_cb['class'] = 'cb'
+    d_fv['class'] = 'fv'
+    d_mf['class'] = 'mf'
 
     d_all['condition'] = 'real_stim'
-    d_all['condition'] = 'real_stim'
-    d_all['condition'] = 'real_stim'
-    d_all['condition'] = 'real_stim'
+    d_cb['condition'] = 'real_stim'
+    d_fv['condition'] = 'real_stim'
+    d_mf['condition'] = 'real_stim'
+    
+    d = pd.concat((d_all, d_cb, d_fv, d_mf))
+    
+    sn.barplot(data=res, x='net', y='acc', hue='class')
+    plt.savefig('results_test_classify_real_stim.pdf')
+    plt.close()
 
 
 def inspect_features(nets, dls):
