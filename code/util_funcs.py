@@ -294,7 +294,7 @@ def get_img_tuple_fov_empty_abstract(path, label_func):
     )
 
 
-def get_img_tuple_fov_diff_abstract(path):
+def get_img_tuple_fov_diff_abstract(path, label_func):
     img1 = Image.open(path[0])
     img2 = Image.open(path[1])
 
@@ -328,8 +328,7 @@ def get_img_tuple_fov_diff_abstract(path):
     )
 
 
-def get_img_tuple_fov_same_abstract(path,
-                                    label_func=label_func_class_abstract):
+def get_img_tuple_fov_same_abstract(path, label_func):
     img1 = Image.open(path[0])
     img2 = Image.open(path[1])
 
@@ -387,7 +386,7 @@ def get_img_tuple_fov_empty(path, label_func):
     )
 
 
-def get_img_tuple_fov_same(path):
+def get_img_tuple_fov_same(path, label_func):
     root = os.path.dirname(path)
 
     pair = Image.open(path)
@@ -429,7 +428,7 @@ def get_img_tuple_fov_same(path):
     )
 
 
-def get_img_tuple_fov_diff(path):
+def get_img_tuple_fov_diff(path, label_func):
     root = os.path.dirname(path)
 
     pair = Image.open(path)
@@ -779,11 +778,6 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed, condition):
             res = pd.concat(res)
             res.to_csv('results_test_classify_' + key + '_' + condition +
                        '.csv')
-
-            sn.barplot(data=res, x='net', y='acc')
-            plt.savefig('results_test_classify_' + key + '_' + condition +
-                        '.pdf')
-            plt.close()
 
 
 def inspect_test_fov_img():

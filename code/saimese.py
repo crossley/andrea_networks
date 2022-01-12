@@ -44,6 +44,7 @@ if __name__ == '__main__':
     # net_12 = SiameseNet12(w_dropout_1, w_dropout_2)
     # net_22 = SiameseNet22(w_dropout_1, w_dropout_2)
     net_13 = SiameseNet13(w_dropout_1, w_dropout_2)
+    net_23 = SiameseNet13(w_dropout_1, w_dropout_2)
 
     # nets = [net_0, net_1, net_2, net_02, net_12, net_22, net_13]
     # nets = [x.to(defaults.device) for x in nets]
@@ -51,8 +52,11 @@ if __name__ == '__main__':
 
     net_13.to(defaults.device)
     net_13 = nn.DataParallel(net_13)
+    
+    net_23.to(defaults.device)
+    net_23 = nn.DataParallel(net_23)
 
-    nets = [net_13]
+    nets = [net_23]
 
     # criterion = nn.CrossEntropyLoss()
     criterion = CrossEntropyLossFlat()
@@ -61,11 +65,9 @@ if __name__ == '__main__':
     # dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
     # train_networks([net_13], criterion, dls, batch_sz, cycles, epochs, lr_min,
     #                 weight_decay, seed, 'real_stim')
-    # test_fov_img(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
-    # test_noise(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
-    # test_classify(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
-    
-    inspect_test_classify()
+    test_fov_img(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
+    test_noise(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
+    test_classify(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
 
     # NOTE: abstract stim training / testing
     # dls = make_dls_abstract(stim_path_abstract, get_img_tuple_fov_empty_abstract,
@@ -74,7 +76,7 @@ if __name__ == '__main__':
     #                 weight_decay, seed, 'abstract_stim')
     # test_fov_img(nets, criterion, stim_path_abstract, batch_sz, seed, 'abstract_stim')
     # test_noise(nets, criterion, stim_path_abstract, batch_sz, seed,
-    #            'abstract_stim')
+    #             'abstract_stim')
     # test_classify(nets, criterion, stim_path_abstract, batch_sz, seed, 'abstract_stim')
 
     # inspect weights / features
