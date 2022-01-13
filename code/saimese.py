@@ -37,7 +37,7 @@ if __name__ == '__main__':
     w_dropout_2 = 0.2
     test_prop = 0.2
 
-    # net_0 = SiameseNet0(w_dropout_1, w_dropout_2)
+    net_0 = SiameseNet0(w_dropout_1, w_dropout_2)
     # net_1 = SiameseNet1(w_dropout_1, w_dropout_2)
     # net_2 = SiameseNet2(w_dropout_1, w_dropout_2)
     # net_02 = SiameseNet02(w_dropout_1, w_dropout_2)
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     net_13 = SiameseNet13(w_dropout_1, w_dropout_2)
     net_23 = SiameseNet23(w_dropout_1, w_dropout_2)
     
-    nets = [net_23, net_13]
+    nets = [net_23, net_13, net_0]
     nets = [x.to(defaults.device) for x in nets]
     nets = [nn.DataParallel(x) for x in nets]
 
@@ -62,9 +62,9 @@ if __name__ == '__main__':
     # dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
     # train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
     #                 weight_decay, seed, 'real_stim')
-    # test_fov_img(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
-    # test_noise(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
-    # test_classify(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
+    test_fov_img(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
+    test_noise(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
+    test_classify(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
 
     # NOTE: abstract stim training / testing
     # dls = make_dls_abstract(stim_path_abstract, get_img_tuple_fov_empty_abstract,

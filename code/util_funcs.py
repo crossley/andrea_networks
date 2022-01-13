@@ -581,10 +581,6 @@ def test_noise(nets, criterion, stim_path, batch_sz, seed, condition):
     d = pd.concat(d)
     d.to_csv("results_test_noise_" + condition + ".csv")
 
-    sn.scatterplot(data=d, x="noise_sd", y="te_acc", hue="net")
-    plt.savefig("results_test_noise_" + condition + ".pdf")
-    plt.close()
-
     return d
 
 
@@ -646,11 +642,6 @@ def test_fov_img(nets, criterion, stim_path, batch_sz, seed, condition):
     d = pd.concat(d)
     d.to_csv("results_test_fovimg_" + condition + ".csv")
 
-    sn.barplot(data=d, x="net", y="te_acc", hue="condition")
-    plt.xticks(rotation=45)
-    plt.savefig("results_test_fovimg_" + condition + ".pdf")
-    plt.close()
-
 
 def get_features(net, net_layer, net_layer_name, dls):
 
@@ -696,6 +687,7 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed, condition):
                                 0.2,
                                 lab_func=label_func_class_abstract)
 
+    res = []
     for net in nets:
         print(net.module.model_name)
         state_dict = torch.load('net_111' + net.module.model_name + '.pth',
@@ -714,7 +706,6 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed, condition):
         y = np.hstack(y)
 
         if condition == 'real_stim':
-            # TODO: test these to make sure they're correct
             cb_mask = np.isin(y, [0, 1])
             mf_mask = np.isin(y, [2, 3])
 
@@ -758,7 +749,6 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed, condition):
             y = Xy[1]
 
             f = 0
-            res = []
             for train_index, test_index in skf.split(X, y):
                 print(f)
                 f += 1
@@ -769,17 +759,17 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed, condition):
 
                 res.append(
                     pd.DataFrame({
+                        'key': key,
                         'net': net.model_name,
                         'fold': f,
                         'acc': acc
                     },
                                  index=[f]))
 
-            res = pd.concat(res)
-            res.to_csv('results_test_classify_' + key + '_' + condition +
-                       '.csv')
-
-
+    res = pd.concat(res)
+    res.to_csv('results_test_classify_' + condition + '.csv')
+    
+    
 def inspect_test_fov_img():
     d_real = pd.read_csv('results_test_fovimg_real_stim.csv')
     d_abstract = pd.read_csv('results_test_fovimg_abstract_stim.csv')
