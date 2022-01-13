@@ -11,12 +11,12 @@ from imports import *
 class SiameseNet23(SiameseNet):
     def __init__(self, w_dropout_1, w_dropout_2):
 
-        super(SiameseNet13, self).__init__(w_dropout_1, w_dropout_2, 3)
+        super(SiameseNet23, self).__init__(w_dropout_1, w_dropout_2, 3)
 
         self.model_name = 'SiameseNet23'
 
         self.fb = nn.Sequential(
-            nn.Conv2d(128, 61, kernel_size=3, stride=1, padding=0),
+            nn.Conv2d(1024, 61, kernel_size=3, stride=1, padding=0),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=1, padding=1),
         )

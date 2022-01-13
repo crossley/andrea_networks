@@ -1,0 +1,4 @@
+,condition,net,te_acc
+0,empty,SiameseNet13,78.42261904761905
+0,same,SiameseNet13,50.37202380952381
+0,diff,SiameseNet13,50.44642857142857
