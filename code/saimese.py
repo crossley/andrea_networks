@@ -45,7 +45,7 @@ if __name__ == '__main__':
     # net_22 = SiameseNet22(w_dropout_1, w_dropout_2)
     net_13 = SiameseNet13(w_dropout_1, w_dropout_2)
     net_23 = SiameseNet23(w_dropout_1, w_dropout_2)
-    
+
     nets = [net_13, net_23]
     nets = [x.to(defaults.device) for x in nets]
     nets = [nn.DataParallel(x) for x in nets]
@@ -73,7 +73,8 @@ if __name__ == '__main__':
     #                 weight_decay, seed, 'abstract_stim')
     gc.collect()
     torch.cuda.empty_cache()
-    test_fov_img(nets, criterion, stim_path_abstract, batch_sz, seed, 'abstract_stim')
+    test_fov_img(nets, criterion, stim_path_abstract, batch_sz, seed,
+                 'abstract_stim')
     # test_noise(nets, criterion, stim_path_abstract, batch_sz, seed,
     #             'abstract_stim')
     # test_classify(nets, criterion, stim_path_abstract, batch_sz, seed, 'abstract_stim')
