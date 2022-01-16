@@ -226,8 +226,12 @@ def make_dls_abstract(root,
     return dls
 
 
-# TODO: implement this
+# TODO: implement / check
 def make_dls_imagenet():
+
+    # For examples, see:
+    # https://docs.fast.ai/vision.data.html#ImageDataLoaders
+    # https://docs.fast.ai/tutorial.imagenette.html for examples
 
     transform_item = transforms.Compose([
         transforms.RandomResizedCrop(224),
@@ -250,7 +254,7 @@ def make_dls_imagenet():
         shuffle=True  # shuffle training DataLoader
     )
 
-    # See https://docs.fast.ai/vision.data.html#ImageDataLoaders or https://docs.fast.ai/tutorial.imagenette.html for examples
+    return dls
 
 
 def get_tuples(files):

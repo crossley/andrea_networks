@@ -79,7 +79,10 @@ if __name__ == '__main__':
     #                         batch_sz, seed)
     # train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
     #                 weight_decay, seed, 'abstract_stim')
-    # test_fov_img(nets, criterion, stim_path_abstract, batch_sz, seed, 'abstract_stim')
+    gc.collect()
+    torch.cuda.empty_cache()
+    test_fov_img(nets, criterion, stim_path_abstract, batch_sz, seed,
+                 'abstract_stim')
     # test_noise(nets, criterion, stim_path_abstract, batch_sz, seed,
     #             'abstract_stim')
     # test_classify(nets, criterion, stim_path_abstract, batch_sz, seed, 'abstract_stim')
