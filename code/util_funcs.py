@@ -594,7 +594,7 @@ def test_fov_img(nets, criterion, stim_path, batch_sz, seed, condition):
                              seed)
         dls_same = make_dls(stim_path, get_img_tuple_fov_same, batch_sz, seed)
         dls_diff = make_dls(stim_path, get_img_tuple_fov_diff, batch_sz, seed)
-        
+
     elif condition == 'abstract_stim':
         dls_empty = make_dls_abstract(stim_path,
                                       get_img_tuple_fov_empty_abstract,
@@ -615,7 +615,7 @@ def test_fov_img(nets, criterion, stim_path, batch_sz, seed, condition):
         res_empty = net.module.test_net(criterion, dls_empty[1])
         res_same = net.module.test_net(criterion, dls_same[1])
         res_diff = net.module.test_net(criterion, dls_diff[1])
-        
+
         d_empty.append(
             pd.DataFrame({
                 "condition": "empty",
@@ -634,7 +634,7 @@ def test_fov_img(nets, criterion, stim_path, batch_sz, seed, condition):
                 "net": net.module.model_name,
                 "te_acc": res_diff[1],
             }))
-        
+
     d_empty = pd.concat(d_empty)
     d_same = pd.concat(d_same)
     d_diff = pd.concat(d_diff)
@@ -758,25 +758,34 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed, condition):
                 acc = pipe.score(X_test, y_test)
 
                 res.append(
-                    pd.DataFrame({
-                        'key': key,
-                        'net': net.model_name,
-                        'fold': f,
-                        'acc': acc
-                    },
-                                 index=[f]))
+                    pd.DataFrame(
+                        {
+                            'key': key,
+                            'net': net.model_name,
+                            'fold': f,
+                            'acc': acc
+                        },
+                        index=[f]))
 
     res = pd.concat(res)
     res.to_csv('results_test_classify_' + condition + '.csv')
-    
-    
+
+
 def inspect_test_fov_img():
     d_real = pd.read_csv('results_test_fovimg_real_stim.csv')
     d_abstract = pd.read_csv('results_test_fovimg_abstract_stim.csv')
 
     fig, ax = plt.subplots(1, 2, squeeze=False)
-    sn.barplot(data=d_real, x="condition", y="te_acc", hue="condition", ax=ax[0, 0])
-    sn.barplot(data=d_abstract, x="condition", y="te_acc", hue="condition", ax=ax[0, 1])
+    sn.barplot(data=d_real,
+               x="condition",
+               y="te_acc",
+               hue="condition",
+               ax=ax[0, 0])
+    sn.barplot(data=d_abstract,
+               x="condition",
+               y="te_acc",
+               hue="condition",
+               ax=ax[0, 1])
     plt.tight_layout()
     plt.savefig("results_test_fovimg_real_and_abstract.pdf")
     plt.close()
@@ -785,12 +794,12 @@ def inspect_test_fov_img():
 def inspect_test_noise():
     d_real = pd.read_csv('results_test_noise_real_stim.csv')
     d_abstract = pd.read_csv('results_test_noise_abstract_stim.csv')
-    
+
     d_real['condition'] = 'real_stim'
     d_abstract['condition'] = 'abstract_stim'
-    
+
     d = pd.concat((d_real, d_abstract))
-    
+
     sn.scatterplot(data=d, x="noise_sd", y="te_acc", hue="condition")
     plt.savefig('results_test_noise_real_and_abstract.pdf')
     plt.close()
@@ -811,13 +820,13 @@ def inspect_test_classify():
     d_cb['condition'] = 'real_stim'
     d_fv['condition'] = 'real_stim'
     d_mf['condition'] = 'real_stim'
-    
+
     d_abstract = pd.read_csv('results_test_classify_all_abstract_stim.csv')
     d_abstract['class'] = 'abstract'
     d_abstract['condition'] = 'abstract_stim'
-    
+
     d = pd.concat((d_all, d_cb, d_fv, d_mf))
-    
+
     sn.barplot(data=d, x='net', y='acc', hue='class')
     plt.savefig('results_test_classify_real_and_abstract.pdf')
     plt.close()

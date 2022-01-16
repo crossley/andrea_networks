@@ -5,6 +5,7 @@ Created on Sun Nov 21 10:03:25 2021
 @author: mq20185996
 """
 
+from torchinfo import summary
 from fastai.vision.all import *
 import torch.nn as nn
 import warnings
