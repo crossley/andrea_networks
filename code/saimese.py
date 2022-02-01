@@ -46,17 +46,17 @@ if __name__ == '__main__':
     net_13 = SiameseNet13(w_dropout_1, w_dropout_2)
     net_23 = SiameseNet23(w_dropout_1, w_dropout_2)
 
-    nets = [net_23, net_13, net_0]
+    nets = [net_23, net_13]
     nets = [x.to(defaults.device) for x in nets]
     nets = [nn.DataParallel(x) for x in nets]
 
-    for net in nets:
-        net.module.init_weights()
-        net.module.init_pretrained_weights()
-        net.module.freeze_pretrained_weights()
-        params_to_update = net.parameters()
+    # for net in nets:
+    #     net.module.init_weights()
+    #     net.module.init_pretrained_weights()
+    #     net.module.freeze_pretrained_weights()
+    #     params_to_update = net.parameters()
 
-    print(summary(nets[2], input_size=(3, batch_sz, 3, 224, 224)))
+    # print(summary(nets[2], input_size=(3, batch_sz, 3, 224, 224)))
 
     # net_13.to(defaults.device)
     # net_13 = nn.DataParallel(net_13)
