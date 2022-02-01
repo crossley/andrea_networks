@@ -46,27 +46,9 @@ if __name__ == '__main__':
     net_13 = SiameseNet13(w_dropout_1, w_dropout_2)
     net_23 = SiameseNet23(w_dropout_1, w_dropout_2)
 
-    nets = [net_23, net_13]
+    nets = [net_13, net_23]
     nets = [x.to(defaults.device) for x in nets]
     nets = [nn.DataParallel(x) for x in nets]
-
-    # NOTE: For assessing network layer dims
-    # for net in nets:
-    #     net.module.init_weights()
-    #     net.module.init_pretrained_weights()
-    #     net.module.freeze_pretrained_weights()
-    #     params_to_update = net.parameters()
-
-    # print(summary(nets[2], input_size=(3, batch_sz, 3, 224, 224)))
-    # print(summary(nets[2], input_size=(3, batch_sz, 3, 224, 224)))
-
-    # NOTE: For double checking the dims (meant to be used with print
-    # statements in the forward methods)
-    # net = nets[1]
-    # with torch.no_grad():
-    #     inputs = (torch.zeros((1, 3, 224, 224)), torch.zeros(
-    #         (1, 3, 224, 224)), torch.zeros((1, 3, 224, 224)))
-    #     out = net(inputs)
 
     # net_13.to(defaults.device)
     # net_13 = nn.DataParallel(net_13)
@@ -91,10 +73,10 @@ if __name__ == '__main__':
     #                 weight_decay, seed, 'abstract_stim')
     gc.collect()
     torch.cuda.empty_cache()
-    test_noise(nets, criterion, stim_path_abstract, batch_sz, seed,
-                'abstract_stim')
-    # test_fov_img(nets, criterion, stim_path_abstract, batch_sz, seed,
-    #              'abstract_stim')
+    test_fov_img(nets, criterion, stim_path_abstract, batch_sz, seed,
+                 'abstract_stim')
+    # test_noise(nets, criterion, stim_path_abstract, batch_sz, seed,
+    #             'abstract_stim')
     # test_classify(nets, criterion, stim_path_abstract, batch_sz, seed, 'abstract_stim')
 
     # inspect weights / features
