@@ -928,8 +928,8 @@ def inspect_test_classify(path):
         fontweight="bold",
     )
 
-    plt.show()
     plt.savefig(os.path.join(path, "new_classify_real_and_abstract.pdf"))
+    plt.show()
     plt.close()
 
 
