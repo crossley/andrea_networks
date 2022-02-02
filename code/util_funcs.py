@@ -779,19 +779,22 @@ def inspect_test_fov_img():
     d_real = pd.read_csv('results_test_fovimg_real_stim.csv')
     d_abstract = pd.read_csv('results_test_fovimg_abstract_stim.csv')
 
-    fig, ax = plt.subplots(1, 2, squeeze=False)
+    d_real.sort_values('net', inplace=True)
+    d_abstract.sort_values('net', inplace=True)
+
+    fig, ax = plt.subplots(1, 2, squeeze=False, figsize=(10, 4))
     sn.barplot(data=d_real,
                x="condition",
                y="te_acc",
-               hue="condition",
+               hue="net",
                ax=ax[0, 0])
     sn.barplot(data=d_abstract,
                x="condition",
                y="te_acc",
-               hue="condition",
+               hue="net",
                ax=ax[0, 1])
     plt.tight_layout()
-    plt.savefig("results_test_fovimg_real_and_abstract.pdf")
+    plt.savefig("../figures/results_test_fovimg_real_and_abstract.pdf")
     plt.close()
 
 
@@ -804,35 +807,34 @@ def inspect_test_noise():
 
     d = pd.concat((d_real, d_abstract))
 
-    sn.scatterplot(data=d, x="noise_sd", y="te_acc", hue="condition")
-    plt.savefig('results_test_noise_real_and_abstract.pdf')
+    fig, ax = plt.subplots(1, 1, squeeze=False, figsize=(6, 6))
+    sn.scatterplot(data=d,
+                   x="noise_sd",
+                   y="te_acc",
+                   hue="condition",
+                   style="net",
+                   ax=ax[0, 0])
+    plt.savefig('../figures/results_test_noise_real_and_abstract.pdf')
     plt.close()
 
 
 def inspect_test_classify():
-    d_all = pd.read_csv('results_test_classify_all.csv')
-    d_cb = pd.read_csv('results_test_classify_cb.csv')
-    d_fv = pd.read_csv('results_test_classify_fv.csv')
-    d_mf = pd.read_csv('results_test_classify_mf.csv')
+    d_real = pd.read_csv('results_test_classify_real_stim.csv')
+    d_real['condition'] = 'real'
+    d_real.rename(columns={'key': 'class'}, inplace=True)
 
-    d_all['class'] = 'all'
-    d_cb['class'] = 'cb'
-    d_fv['class'] = 'fv'
-    d_mf['class'] = 'mf'
+    # d_abstract = pd.read_csv('results_test_classify_all_abstract_stim.csv')
+    # d_abstract['class'] = 'abstract'
+    # d_abstract['condition'] = 'abstract_stim'
 
-    d_all['condition'] = 'real_stim'
-    d_cb['condition'] = 'real_stim'
-    d_fv['condition'] = 'real_stim'
-    d_mf['condition'] = 'real_stim'
+    d = d_real
+    d.sort_values('net', inplace=True)
 
-    d_abstract = pd.read_csv('results_test_classify_all_abstract_stim.csv')
-    d_abstract['class'] = 'abstract'
-    d_abstract['condition'] = 'abstract_stim'
+    # d = pd.concat((d_real, d_abstract))
 
-    d = pd.concat((d_all, d_cb, d_fv, d_mf))
-
-    sn.barplot(data=d, x='net', y='acc', hue='class')
-    plt.savefig('results_test_classify_real_and_abstract.pdf')
+    fig, ax = plt.subplots(1, 1, squeeze=False, figsize=(8, 6))
+    sn.barplot(data=d, x='net', y='acc', hue='class', ax=ax[0, 0])
+    plt.savefig('../figures/results_test_classify_real_and_abstract.pdf')
     plt.close()
 
 
