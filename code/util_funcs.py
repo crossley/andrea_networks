@@ -908,7 +908,7 @@ def inspect_test_classify(path):
 
     # d = pd.concat((d_real, d_abstract))
 
-    fig, ax = plt.subplots(1, 1, squeeze=False, figsize=(8, 6))
+    fig, ax = plt.subplots(1, 1, squeeze=False, figsize=(10, 4))
     sn.barplot(
         data=d,
         x="Model feedback",
@@ -919,7 +919,7 @@ def inspect_test_classify(path):
         errwidth=1.5,
     )
 
-    ax[0, 0].set_ylim(0, 1)
+    ax[0, 0].set_ylim(0.5, 1)
     ax[0, 0].set_xlabel("Network")
     ax[0, 0].set_ylabel("Classification Accuracy")
     plt.suptitle(
