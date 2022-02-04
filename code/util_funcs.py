@@ -551,7 +551,7 @@ def train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
 
 def test_noise(nets, criterion, stim_path, batch_sz, seed, condition):
     d = []
-    noise_sd = np.linspace(0.0, 60.0, 25)
+    noise_sd = np.linspace(0.0, 100.0, 40)
     for v in noise_sd:
         if condition == 'real_stim':
             dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
@@ -575,12 +575,13 @@ def test_noise(nets, criterion, stim_path, batch_sz, seed, condition):
                     map_location=defaults.device,
                 ))
             res = net.module.test_net(criterion, dls[1])
-            (te_loss, te_acc, cf_pred, cf_y) = res
+            (te_loss, te_acc, te_err, cf_pred, cf_y) = res
             d.append(
                 pd.DataFrame({
                     "noise_sd": v,
                     "net": net.module.model_name,
-                    "te_acc": te_acc
+                    "te_acc": te_acc,
+                    "te_err": te_err,
                 }))
     d = pd.concat(d)
     d.to_csv("results_test_noise_" + condition + ".csv")
@@ -625,18 +626,21 @@ def test_fov_img(nets, criterion, stim_path, batch_sz, seed, condition):
                 "condition": "empty",
                 "net": net.module.model_name,
                 "te_acc": res_empty[1],
+                "te_err": res_empty[2]
             }))
         d_same.append(
             pd.DataFrame({
                 "condition": "same",
                 "net": net.module.model_name,
                 "te_acc": res_same[1],
+                "te_err": res_same[2],
             }))
         d_diff.append(
             pd.DataFrame({
                 "condition": "diff",
                 "net": net.module.model_name,
                 "te_acc": res_diff[1],
+                "te_err": res_diff[2],
             }))
 
     d_empty = pd.concat(d_empty)
