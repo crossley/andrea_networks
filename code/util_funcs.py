@@ -544,7 +544,7 @@ def train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
         })
 
         torch.save(net.state_dict(),
-                   "net_111" + net.module.model_name + ".pth")
+                   "net_111" + net.module.model_name + "_" + condition + ".pth")
         d.to_csv("results_train_" + net.module.model_name + "_" + condition +
                  ".csv")
 
@@ -571,7 +571,7 @@ def test_noise(nets, criterion, stim_path, batch_sz, seed, condition):
             print(net.module.model_name)
             net.load_state_dict(
                 torch.load(
-                    "net_111" + net.module.model_name + ".pth",
+                    "net_111" + net.module.model_name + "_" + condition + ".pth",
                     map_location=defaults.device,
                 ))
             res = net.module.test_net(criterion, dls[1])
@@ -581,7 +581,7 @@ def test_noise(nets, criterion, stim_path, batch_sz, seed, condition):
                     "noise_sd": v,
                     "net": net.module.model_name,
                     "te_acc": te_acc,
-                    "te_err": te_err,
+                    "te_err": te_err
                 }))
     d = pd.concat(d)
     d.to_csv("results_test_noise_" + condition + ".csv")
@@ -613,7 +613,7 @@ def test_fov_img(nets, criterion, stim_path, batch_sz, seed, condition):
 
     for net in nets:
         print(net.module.model_name)
-        state_dict = torch.load("net_111" + net.module.model_name + ".pth",
+        state_dict = torch.load("net_111" + net.module.model_name + "_" + condition + ".pth",
                                 map_location=defaults.device)
         net.load_state_dict(state_dict)
 

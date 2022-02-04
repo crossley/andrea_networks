@@ -77,24 +77,24 @@ if __name__ == '__main__':
     criterion = CrossEntropyLossFlat()
 
     # NOTE: fmri stim training / testing
-    # dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
-    # train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
-    #                weight_decay, seed, 'real_stim')
-    # test_fov_img(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
-    # test_noise(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
+    dls = make_dls(stim_path, get_img_tuple_fov_empty, batch_sz, seed)
+    train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
+                    weight_decay, seed, 'real_stim')
+    test_fov_img(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
+    test_noise(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
     # test_classify(nets, criterion, stim_path, batch_sz, seed, 'real_stim')
 
     # NOTE: abstract stim training / testing
-    # dls = make_dls_abstract(stim_path_abstract, get_img_tuple_fov_empty_abstract,
-    #                         batch_sz, seed)
-    # train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
-    #                 weight_decay, seed, 'abstract_stim')
+    dls = make_dls_abstract(stim_path_abstract, get_img_tuple_fov_empty_abstract,
+                            batch_sz, seed)
+    train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
+                    weight_decay, seed, 'abstract_stim')
     # gc.collect()
     # torch.cuda.empty_cache()
-    # test_noise(nets, criterion, stim_path_abstract, batch_sz, seed,
-    #             'abstract_stim')
-    # test_fov_img(nets, criterion, stim_path_abstract, batch_sz, seed,
-    #               'abstract_stim')
+    test_noise(nets, criterion, stim_path_abstract, batch_sz, seed,
+                'abstract_stim')
+    test_fov_img(nets, criterion, stim_path_abstract, batch_sz, seed,
+                  'abstract_stim')
     # test_classify(nets, criterion, stim_path_abstract, batch_sz, seed, 'abstract_stim')
 
     # inspect weights / features
