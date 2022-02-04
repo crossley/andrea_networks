@@ -31,7 +31,7 @@ if __name__ == '__main__':
     epochs = 50
     cycles = 1
     batch_sz = 24
-    lr_min = 1e-6
+    lr_min = 5e-7
     weight_decay = 1e-3
     w_dropout_1 = 0.2
     w_dropout_2 = 0.2
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     net_13 = SiameseNet13(w_dropout_1, w_dropout_2)
     net_23 = SiameseNet23(w_dropout_1, w_dropout_2)
 
-    nets = [net_23, net_13]
+    nets = [net_13, net_23]
     nets = [x.to(defaults.device) for x in nets]
     nets = [nn.DataParallel(x) for x in nets]
 

@@ -827,17 +827,18 @@ def inspect_test_classify():
     d_real['condition'] = 'real'
     d_real.rename(columns={'key': 'class'}, inplace=True)
 
-    # d_abstract = pd.read_csv('results_test_classify_all_abstract_stim.csv')
-    # d_abstract['class'] = 'abstract'
-    # d_abstract['condition'] = 'abstract_stim'
+    d_abstract = pd.read_csv('results_test_classify_abstract_stim.csv')
+    d_abstract['class'] = 'abstract'
+    d_abstract['condition'] = 'abstract_stim'
 
-    d = d_real
-    d.sort_values('net', inplace=True)
+    d_real.sort_values('net', inplace=True)
+    d_abstract.sort_values('net', inplace=True)
 
     # d = pd.concat((d_real, d_abstract))
 
-    fig, ax = plt.subplots(1, 1, squeeze=False, figsize=(8, 6))
-    sn.barplot(data=d, x='net', y='acc', hue='class', ax=ax[0, 0])
+    fig, ax = plt.subplots(1, 2, squeeze=False, figsize=(8, 6))
+    sn.barplot(data=d_real, x='net', y='acc', hue='class', ax=ax[0, 0])
+    sn.barplot(data=d_abstract, x='net', y='acc', hue='class', ax=ax[0, 1])
     plt.savefig('../figures/results_test_classify_real_and_abstract.pdf')
     plt.close()
 
