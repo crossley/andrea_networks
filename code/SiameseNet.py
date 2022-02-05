@@ -262,6 +262,10 @@ class SiameseNet(nn.Module):
         te_err = []
         cf_pred = []
         cf_y = []
+        
+        labels_rec = []
+        pred_rec = []
+        
         with torch.no_grad():
             start = time.time()
             for (inputs, labels) in test_loader:
@@ -273,10 +277,12 @@ class SiameseNet(nn.Module):
                 pred = pred.cpu().numpy()
                 labels = labels.cpu().numpy()
                 te_correct += np.equal(pred, labels).astype(int).sum()
-                te_err_samp = np.std(np.equal(pred, labels).astype(int), ddof=1) / np.sqrt(labels.shape[0])
+                # te_err_samp = np.std(np.equal(pred, labels).astype(int), ddof=1) / np.sqrt(labels.shape[0])
                 # cf_y += labels.cpu().detach().tolist()
                 # cf_pred += pred.cpu().detach().tolist()
-            te_err.append(te_err_samp)
+                labels_rec.append(labels)
+                pred_rec.append(pred)
+            # te_err.append(te_err_samp)
             te_acc.append(100 * te_correct / te_total)
             te_loss.append(te_running_loss)
             end = time.time() - start
@@ -284,4 +290,4 @@ class SiameseNet(nn.Module):
                   "{0:0.2f}".format(100 * te_correct / te_total),
                   "{0:0.2f}".format(end))
 
-        return (te_loss, te_acc, te_err, cf_pred, cf_y)
+        return (te_loss, te_acc, te_err, cf_pred, cf_y, labels_rec, pred_rec)
