@@ -262,10 +262,10 @@ class SiameseNet(nn.Module):
         te_err = []
         cf_pred = []
         cf_y = []
-        
+
         labels_rec = []
         pred_rec = []
-        
+
         with torch.no_grad():
             start = time.time()
             for (inputs, labels) in test_loader:

@@ -543,8 +543,9 @@ def train_networks(nets, criterion, dls, batch_sz, cycles, epochs, lr_min,
             "te_acc": te_acc,
         })
 
-        torch.save(net.state_dict(),
-                   "net_111" + net.module.model_name + "_" + condition + ".pth")
+        torch.save(
+            net.state_dict(),
+            "net_111" + net.module.model_name + "_" + condition + ".pth")
         d.to_csv("results_train_" + net.module.model_name + "_" + condition +
                  ".csv")
 
@@ -571,11 +572,13 @@ def test_noise(nets, criterion, stim_path, batch_sz, seed, condition):
             print(net.module.model_name)
             net.load_state_dict(
                 torch.load(
-                    "net_111" + net.module.model_name + "_" + condition + ".pth",
+                    "net_111" + net.module.model_name + "_" + condition +
+                    ".pth",
                     map_location=defaults.device,
                 ))
             res = net.module.test_net(criterion, dls[1])
-            (te_loss, te_acc, te_err, cf_pred, cf_y, labels_rec, pred_rec) = res
+            (te_loss, te_acc, te_err, cf_pred, cf_y, labels_rec,
+             pred_rec) = res
             d.append(
                 pd.DataFrame({
                     "noise_sd": v,
@@ -615,7 +618,8 @@ def test_fov_img(nets, criterion, stim_path, batch_sz, seed, condition):
 
     for net in nets:
         print(net.module.model_name)
-        state_dict = torch.load("net_111" + net.module.model_name + "_" + condition + ".pth",
+        state_dict = torch.load("net_111" + net.module.model_name + "_" +
+                                condition + ".pth",
                                 map_location=defaults.device)
         net.load_state_dict(state_dict)
 
@@ -786,46 +790,63 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed, condition):
     res = pd.concat(res)
     res.to_csv('results_test_classify_' + condition + '.csv')
 
+def add_stats(x):
+    labels = x['labels'].to_numpy()
+    pred = x['pred'].to_numpy()
+
+    labels_rec = []
+    pred_rec = []
+    for i in range(len(labels)):
+        for j in range(len(labels[i])):
+            if labels[i][j].isnumeric():
+                labels_rec.append(int(labels[i][j]))
+                pred_rec.append(int(pred[i][j]))
+    acc = (np.array(labels_rec) == np.array(pred_rec)).astype(float)
+    return pd.DataFrame({'acc': acc})
+
 
 def inspect_test_fov_img():
-    d_real = pd.read_csv('results_test_fovimg_real_stim.csv')
-    d_abstract = pd.read_csv('results_test_fovimg_abstract_stim.csv')
+    d_real = pd.read_csv('results_test_fovimg_real_stim.csv', index_col=0)
+    d_abstract = pd.read_csv('results_test_fovimg_abstract_stim.csv', index_col=0)
 
-    d_real.sort_values('net', inplace=True)
-    d_abstract.sort_values('net', inplace=True)
+    d_real.reset_index(drop=True, inplace=True)
+    d_abstract.reset_index(drop=True, inplace=True)
+
+    d_real = d_real.groupby(['condition', 'net']).apply(add_stats).reset_index()
+    d_abstract = d_abstract.groupby(['condition', 'net']).apply(add_stats).reset_index()
+
+    d_real.sort_values(['net', 'condition'], inplace=True)
+    d_abstract.sort_values(['net', 'condition'], inplace=True)
 
     fig, ax = plt.subplots(1, 2, squeeze=False, figsize=(10, 4))
-    sn.barplot(data=d_real,
-               x="condition",
-               y="te_acc",
-               hue="net",
-               ax=ax[0, 0])
-    sn.barplot(data=d_abstract,
-               x="condition",
-               y="te_acc",
-               hue="net",
-               ax=ax[0, 1])
+    sn.barplot(data=d_real, x="condition", y="acc", hue="net", ax=ax[0, 0])
+    sn.barplot(data=d_abstract, x="condition", y="acc", hue="net", ax=ax[0, 1])
     plt.tight_layout()
     plt.savefig("../figures/results_test_fovimg_real_and_abstract.pdf")
     plt.close()
 
 
 def inspect_test_noise():
-    d_real = pd.read_csv('results_test_noise_real_stim.csv')
-    d_abstract = pd.read_csv('results_test_noise_abstract_stim.csv')
+    d_real = pd.read_csv('results_test_noise_real_stim.csv', index_col=0)
+    d_abstract = pd.read_csv('results_test_noise_abstract_stim.csv', index_col=0)
+
+    d_real.reset_index(drop=True, inplace=True)
+    d_abstract.reset_index(drop=True, inplace=True)
 
     d_real['condition'] = 'real_stim'
     d_abstract['condition'] = 'abstract_stim'
 
     d = pd.concat((d_real, d_abstract))
 
-    fig, ax = plt.subplots(1, 1, squeeze=False, figsize=(6, 6))
-    sn.scatterplot(data=d,
-                   x="noise_sd",
-                   y="te_acc",
-                   hue="condition",
-                   style="net",
-                   ax=ax[0, 0])
+    d = d.groupby(['condition', 'net', 'noise_sd']).apply(add_stats).reset_index()
+
+    # fig, ax = plt.subplots(1, 2, squeeze=False, figsize=(12, 6))
+    sn.relplot(data=d,
+               x="noise_sd",
+               y="acc",
+               kind='line',
+               hue="net",
+               style="condition")
     plt.savefig('../figures/results_test_noise_real_and_abstract.pdf')
     plt.close()
 
