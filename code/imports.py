@@ -58,3 +58,5 @@ from util_train_nets import *
 
 from collections import OrderedDict
 from itertools import permutations, combinations
+
+sn.set_style("darkgrid")
