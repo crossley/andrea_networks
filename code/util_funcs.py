@@ -822,7 +822,7 @@ def test_classify(nets, criterion, stim_path, batch_sz, seed, condition):
     res.to_csv("results_test_classify_" + condition + ".csv")
 
 
-def add_stats(x):
+def add_stats_old(x):
     labels = x["labels"].to_numpy()
     pred = x["pred"].to_numpy()
 
@@ -835,6 +835,32 @@ def add_stats(x):
                 pred_rec.append(int(pred[i][j]))
     acc = (np.array(labels_rec) == np.array(pred_rec)).astype(float)
     return pd.DataFrame({"acc": acc})
+
+
+def add_stats(x):
+    labels = x["labels"].to_numpy()
+    pred = x["pred"].to_numpy()
+
+    accs = []
+    for i in range(len(x)):
+        a = np.fromstring(labels[i][1:-1], sep=" ")
+        b = np.fromstring(pred[i][1:-1], sep=" ")
+        accs.append(sum(1 for x, y in zip(a, b) if x == y) / float(len(a)))
+    # acc = np.mean(accs)
+    # sd = np.std(accs)
+
+    # labels_rec = []
+    # pred_rec = []
+    # for i in range(len(labels)):
+    #     for j in range(len(labels[i])):
+    #         if labels[i][j].isnumeric():
+    #             labels_rec.append(int(labels[i][j]))
+    #             pred_rec.append(int(pred[i][j]))
+    # labels_rec = labels[i]
+    # pred_rec = pred[i]
+    # acc = (np.array(labels_rec) == np.array(pred_rec)).astype(float)
+    return pd.DataFrame({"acc": accs})
+
 
 def inspect_test_fov_img():
     d_real = pd.read_csv("results_test_fovimg_real_stim.csv", index_col=0)
@@ -1004,7 +1030,6 @@ def inspect_test_classify():
     plt.savefig("../figures/results_test_classify_real_and_abstract.pdf")
     plt.show()
     plt.close()
-
 
 
 def inspect_features(nets, dls):
